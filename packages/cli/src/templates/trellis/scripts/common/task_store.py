@@ -61,6 +61,7 @@ from .safe_commit import (
     safe_git_add,
 )
 from .task_utils import (
+    active_task_conflict,
     archive_destination_for,
     archive_task_complete,
     find_task_by_name,
@@ -623,7 +624,8 @@ def cmd_create(args: argparse.Namespace) -> int:
         print(colored(f"Linked as child of: {parent_dir.name}", Colors.GREEN), file=sys.stderr)
 
     # Auto-activate the new task so the per-turn breadcrumb fires planning
-    # state. Best-effort: gracefully degrade if no session identity (CLI run
+    # state unless unfinished work is already active. Best-effort: gracefully
+    # degrade if no session identity (CLI run
     # outside an AI session) — the task is still created, the user can run
     # task.py start later. Pointer is session-scoped so this never affects
     # other AI sessions.
@@ -660,14 +662,26 @@ def cmd_create(args: argparse.Namespace) -> int:
                     except ValueError:
                         rel_dir = str(task_dir)
                     try:
-                        active = set_active_task(rel_dir, repo_root)
+                        previous_task = active_task_conflict(task_dir, repo_root)
+                        active = None if previous_task else set_active_task(rel_dir, repo_root)
                     except Exception as exc:
                         print(
                             colored(f"Warning: session activation failed (pointer persistence: {exc})", Colors.YELLOW),
                             file=sys.stderr,
                         )
                     else:
-                        if active:
+                        if previous_task:
+                            print(
+                                colored(f"Kept active task for this session: {previous_task}", Colors.YELLOW),
+                                file=sys.stderr,
+                            )
+                            python_cmd = "python" if sys.platform == "win32" else "python3"
+                            print(
+                                f"To switch explicitly, run: {python_cmd} {DIR_WORKFLOW}/scripts/task.py "
+                                f'start "{rel_dir}"',
+                                file=sys.stderr,
+                            )
+                        elif active:
                             print(
                                 colored(f"Activated task for this session: {active.task_path}", Colors.GREEN),
                                 file=sys.stderr,

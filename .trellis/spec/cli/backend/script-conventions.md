@@ -646,9 +646,20 @@ a `.current-task` fallback or a Python hook directory.
   `task.json` and `prd.md`. Missing or whitespace-only descriptions are stored
   as `""` and emit a warning on stderr.
 - Unless `--no-start` is passed, `task.py create` best-effort activates the new
-  task for the current session when a context key is available. This writes
-  `.trellis/.runtime/sessions/<session-key>.json` and prints both the activated
-  task and `Source: session:<key>` on stderr.
+  task when a context key is available and no unfinished task would be displaced.
+  `task_utils.active_task_conflict(task_dir: Path, repo_root: Path) -> str | None`
+  inspects the existing resolver read-only, without single-session fallback.
+  A missing/stale pointer, an archive location, or status `completed` / `done`
+  permits activation. Planning, in-progress, custom/unknown statuses and missing,
+  malformed or unreadable metadata preserve the existing pointer byte-for-byte.
+  Canonically equivalent paths are the same task, not a conflict.
+- Successful activation writes `.trellis/.runtime/sessions/<session-key>.json`
+  and prints the activated task and `Source: session:<key>` on stderr. On a
+  conflict create still succeeds with a new `planning` task, reports the kept
+  task and prints a platform-native `python` (Windows) / `python3` (elsewhere)
+  `task.py start "<new-task>"` command. It does not change the old task metadata
+  or sibling sessions. Explicit start remains unchanged: no `--switch` flag,
+  no extra refusal, and the usual status/branch/context/hook behavior.
 - `task.py create --no-start` must not change any session pointer, even when a
   context key is available. It prints a skip notice and leaves existing session
   runtime state untouched.
@@ -751,7 +762,9 @@ a `.current-task` fallback or a Python hook directory.
 | Condition | Required behavior |
 |-----------|-------------------|
 | `create` without description or with whitespace-only description | Warns on stderr; stores `task.json.description == ""`; initial `prd.md` goal falls back to `TBD.` |
-| `create` with context key, default mode | Task files exist; session runtime points at the new task; activation and source are printed; no `.current-task` |
+| `create` with context key, no unfinished task | Task files exist; session runtime points at the new task; activation and source are printed; no `.current-task` |
+| `create` with unfinished task or unknown/unreadable metadata | New task is `planning`; old pointer and metadata unchanged; kept-task and explicit start guidance on stderr |
+| `create` with malformed exact runtime pointer and a sibling session | Activate new task for the exact session; never adopt or change the sibling |
 | `create --no-start` with context key | Task files exist; existing session runtime is unchanged; skip notice is printed; no `.current-task` |
 | `create` without context key | Task files exist; no `.runtime`; no `.current-task` |
 | `create` with `.codex/` and no `codex.dispatch_mode` override (default `auto`) | Task files exist; `implement.jsonl` and `check.jsonl` exist and are empty |
@@ -791,6 +804,9 @@ a `.current-task` fallback or a Python hook directory.
 
 ##### 5. Good/Base/Bad Cases
 
+- Good: creating B while A is `in_progress` leaves A active and B `planning`;
+  explicit `start B` switches normally after planning review. Treating unreadable
+  A metadata as completion is bad: absence of evidence must not discard context.
 - Good: Cursor provides `conversation_id`; resolver writes
   `cursor_<conversation-id>.json` and hook/plugin output includes the
   session source (statuslines shorten it to `[session]`).
@@ -811,8 +827,13 @@ a `.current-task` fallback or a Python hook directory.
 
 - Regression tests for `create` with a context key writing session runtime and
   surfacing the session source.
+- `test/scripts/task-create-keep-active.integration.test.ts` runs the real CLI
+  in temporary Git repos: compare pointer/old-metadata bytes for planning,
+  in-progress, custom and unreadable states; verify new-task planning status,
+  explicit start/status/hooks, terminal/stale/archived activation, aliases,
+  malformed exact pointers, sibling isolation and no-identity behavior.
 - Regression tests for `create --no-start` preserving an existing session
-  pointer.
+  pointer, including an otherwise replaceable terminal task.
 - Regression tests for blank and whitespace-only `--description` warning and
   normalized `task.json.description`.
 - Regression tests for `create` without a context key producing no runtime or
@@ -845,10 +866,15 @@ print(f"Created task: {dir_name}")
 if args.no_start:
     print("Skipped session activation (--no-start)", file=sys.stderr)
 elif resolve_context_key():
-    active = set_active_task(task_path, repo_root)
-    if active:
-        print(f"Activated task for this session: {active.task_path}", file=sys.stderr)
-        print(f"Source: {active.source}", file=sys.stderr)
+    previous = active_task_conflict(task_dir, repo_root)
+    if previous:
+        print(f"Kept active task for this session: {previous}", file=sys.stderr)
+        # Print platform-native `task.py start "<new-task>"` guidance.
+    else:
+        active = set_active_task(task_path, repo_root)
+        if active:
+            print(f"Activated task for this session: {active.task_path}", file=sys.stderr)
+            print(f"Source: {active.source}", file=sys.stderr)
 ```
 
 ###### Wrong

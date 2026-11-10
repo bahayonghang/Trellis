@@ -22,6 +22,6 @@ The upstream PR includes two policies: preserve unfinished tasks during create, 
 - `packages/cli/test/templates/trellis.test.ts:134-144` requires the initialized Git submodule's `marketplace/workflows/native/workflow.md` to match the bundled workflow (after line-ending normalization). This is an intentional mirror contract, not a baseline failure to skip.
 - Updating the product workflow alone would fail that test. Updating and committing the matching native workflow in the marketplace submodule, then recording its gitlink in this repo, is an additional repository change requiring user approval under the continuation Prompt. Do not weaken the test or modify the already-different local workflow as a workaround.
 
-## Decision required before start
+## Approved decision
 
-Recommended: allow a narrow local marketplace submodule commit for the native workflow mirror, plus the corresponding gitlink in dev. No push/PR/release, no other marketplace files, no blanket upstream merge. Otherwise agree on a different documentation boundary before starting; do not silently drop the PRD's workflow update requirement.
+The user explicitly approved a narrow local marketplace submodule commit for the native workflow mirror and the corresponding gitlink in dev. No push/PR/release, no other marketplace files, no blanket upstream merge. Preserve the already-different local workflow. The submodule starts clean at detached HEAD `7d5298d16e07c328c09493eed1f0652571744b17`; commit only the approved Markdown file and retain the resulting commit in the parent gitlink.
