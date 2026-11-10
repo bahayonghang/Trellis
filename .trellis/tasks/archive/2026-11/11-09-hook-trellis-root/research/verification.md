@@ -302,10 +302,9 @@ uv run --locked pnpm test
   expected hook/support scope. Untracked helpers/test/evidence still require the
   main session's final staged scan; this review did not stage anything.
 
-Remaining handoff: main-session precise staging, final staged detection, attributed
-commit and normal scoped archive. Native POSIX still needs CI validation. Stop
-before task #7 launcher implementation or billed host sessions pending user design
-approval.
+The first independent-review handoff was followed by the additional marker-alternative
+review below. Native POSIX still needs CI validation. Stop before task #7 launcher
+implementation or billed host sessions pending user design approval.
 
 ## Second independent check — preserve marker OR semantics (2026-11-10)
 
@@ -409,6 +408,21 @@ uv run --locked pnpm test
   host session was performed.
 
 No remaining in-scope findings after this second review. Native POSIX and real
-ACL execution remain unverified on this Windows host. Main owns precise staging,
-final staged GitNexus detection, the attributed local commit and normal scoped
-archive; task #7 and billed sessions remain outside this review.
+ACL execution remain unverified on this Windows host; task #7 and billed sessions
+remain outside this review.
+
+## Main-session final gate
+
+Final staged detection included all new assets/tests/evidence: **49 files,
+33 symbols, 25 expected hook/support flows**, CRITICAL within the warned boundary.
+Commit **`2248f9ad fix(hooks): resolve the nearest valid Trellis workspace`**
+includes `Ported from mindfold-ai/Trellis#650`. Real pre-commit lint-staged and
+complete core/CLI suites passed; the working tree was clean after that commit.
+Normal scoped archive follows separately. No push, amend or hook bypass.
+
+Main requested active changed-path LSP diagnostics; server startup/push-only
+coverage remained inconclusive, not a clean-file claim. The direct validators
+above cover the changes. Three task-runner JSON-parse warnings were explicitly
+marked false positive for intentional fail-fast proof parsing; no source
+suppression or catch was added. Main read the final selector and confirmed its
+three independent exception boundaries before staging.

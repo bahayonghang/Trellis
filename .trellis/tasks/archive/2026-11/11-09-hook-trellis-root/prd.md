@@ -46,7 +46,13 @@ rebuilt installations, receipts, upgrade/deletion/uninstall ownership and 835-en
 npm packaging checks passed with the updated helper bytes. No remaining in-scope
 findings after the second review. Permission errors were injected into stdlib
 Path predicates, not exercised with real ACLs; native POSIX remains unverified on
-this Windows host. Main-session staged detection/commit/archive are still pending.
+this Windows host.
+
+Main-session staged detection included all new assets/tests/evidence: 49 files,
+33 symbols and 25 expected hook/support flows (CRITICAL within the warned scope).
+Implementation commit: `2248f9ad fix(hooks): resolve the nearest valid Trellis workspace`,
+with #650 attribution and real pre-commit lint/full tests passing. Normal scoped
+archive follows as separate bookkeeping; no push/amend/hook bypass.
 
 ## Dependencies
 
