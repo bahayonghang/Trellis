@@ -145,4 +145,16 @@ are implementer evidence, not reruns by this reviewer. No code changed during
 review, so a second full suite was not run. Historical overwritten baselines
 remain unrecoverable by this preventive fix; cross-OS execution beyond this
 Windows run and main-session/human sign-off remain outside this review.
-Only this PRD review record was edited. No commit, archive, or push performed.
+Only this PRD review record was edited. No commit, archive, or push performed
+by the check agent.
+
+## Main-session completion
+
+- Committed as `d6f4de29` (`fix(init): preserve template baselines when adding platforms`),
+  including the required upstream attribution. Full pre-commit core/CLI tests passed.
+- Staged GitNexus detection: LOW, only the expected interface, initializer, and
+  new test snapshot/walk helpers. Actual source/tests were reviewed directly.
+- Active LSP path probe: product file has no blocking finding; test warnings refer
+  to unchanged older lines (execSync cast and UpdateOptions `yes` fixtures) outside
+  this port, checked under inferred settings. Required project checks remain green.
+- Ready to archive; no push/amend, no template or dogfood modification.
