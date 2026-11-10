@@ -239,5 +239,22 @@ claimed. Independent review and any commit separation remain with main.
 
 Handoff: no remaining blocking finding within this repair. Windows-only
 verification and the unchanged real-runtime timeout/cache policy remain the
-limits. Commit separation, live LSP and precommit GitNexus `detect_changes`
-remain with the main session.
+limits.
+
+## Main-session completion
+
+- Pi test stabilization committed separately as `a4af3311`
+  (`test(pi): isolate context envelopes from interpreter startup timing`).
+- Selective #649 port committed as `6ffcec06`
+  (`fix(scripts): scope archive commits to the moved task`), with the required
+  upstream attribution. Both real pre-commit hooks passed core 401 and CLI 1945
+  tests, with only the baseline skips. No retry/skip/deadline change or bypass.
+- Staged GitNexus detection: Pi test/docs LOW; archive port MEDIUM with only
+  the expected archive functions, harmless existing `cmd_create` f-string
+  cleanup, test helpers and task research. Source and caller review supplements
+  graph coverage. Active LSP probes report no new blocking finding; push-only
+  coverage remains inconclusive, backed by project and strict test typechecks.
+- Ready to archive using the newly narrowed destination helper. Main separates
+  the move and auto-commit only to run `detect_changes` between them; the same
+  canonical `_auto_commit_archive` performs the actual scoped bookkeeping commit.
+- No push, amend, unrelated task modification or product Pi runtime change.
