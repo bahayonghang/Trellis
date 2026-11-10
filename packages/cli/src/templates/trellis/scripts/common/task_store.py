@@ -69,7 +69,6 @@ from .task_utils import (
     run_task_hooks,
 )
 
-
 # =============================================================================
 # Helper Functions
 # =============================================================================
@@ -363,7 +362,7 @@ def cmd_create(args: argparse.Namespace) -> int:
     if not is_monorepo(repo_root):
         # Single-repo: ignore --package, no package prefix
         if package:
-            print(colored(f"Warning: --package ignored in single-repo project", Colors.YELLOW), file=sys.stderr)
+            print(colored("Warning: --package ignored in single-repo project", Colors.YELLOW), file=sys.stderr)
         package = None
     elif package:
         if not validate_package(package, repo_root):
@@ -1437,17 +1436,18 @@ def cmd_archive(args: argparse.Namespace) -> int:
         print(colored(f"Archived: {dir_name} -> archive/{year_month}/", Colors.GREEN), file=sys.stderr)
 
         # Auto-commit unless --no-commit
-        if not getattr(args, "no_commit", False):
-            if not _auto_commit_archive(dir_name, repo_root, modified_children):
-                print(
-                    colored(
-                        "Archive moved on disk, but git auto-commit did not complete. "
-                        "Resolve `git status` before continuing.",
-                        Colors.RED,
-                    ),
-                    file=sys.stderr,
-                )
-                return 1
+        if not getattr(args, "no_commit", False) and not _auto_commit_archive(
+            dir_name, repo_root, archive_dest, modified_children
+        ):
+            print(
+                colored(
+                    "Archive moved on disk, but git auto-commit did not complete. "
+                    "Resolve `git status` before continuing.",
+                    Colors.RED,
+                ),
+                file=sys.stderr,
+            )
+            return 1
 
         # Return the archive path
         print(f"{DIR_WORKFLOW}/{DIR_TASKS}/{DIR_ARCHIVE}/{year_month}/{dir_name}")
@@ -1463,14 +1463,15 @@ def cmd_archive(args: argparse.Namespace) -> int:
 def _auto_commit_archive(
     task_name: str,
     repo_root: Path,
+    archived_task_dir: Path,
     modified_children: list[str] | None = None,
 ) -> bool:
     """Stage Trellis-owned task paths and commit after archive.
 
     Scoped narrowly to the archived task's source + destination paths
     plus any child task dirs whose ``task.json`` was edited (parent →
-    children relationship update). Dirty changes in OTHER active task
-    dirs are NOT bundled into the archive commit.
+    children relationship update). Dirty changes in OTHER active or archived
+    task dirs are NOT bundled into the archive commit.
 
     If ``.gitignore`` blocks the paths, we warn + skip — we do NOT
     retry with ``git add -f``. The warning explicitly forbids
@@ -1496,7 +1497,10 @@ def _auto_commit_archive(
     source_was_tracked = rc == 0 and bool(tracked_out.strip())
 
     paths = safe_archive_paths_to_add(
-        repo_root, task_name=task_name, modified_children=modified_children
+        repo_root,
+        task_name=task_name,
+        modified_children=modified_children,
+        archived_task_dir=archived_task_dir,
     )
     if not paths:
         print("[OK] No task changes to commit.", file=sys.stderr)
