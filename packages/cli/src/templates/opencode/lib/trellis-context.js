@@ -6,7 +6,7 @@
  */
 
 import { existsSync, readFileSync, appendFileSync, readdirSync, realpathSync, statSync } from "fs"
-import { isAbsolute, join, relative } from "path"
+import { isAbsolute, join, posix, relative } from "path"
 import { platform } from "os"
 import { execSync } from "child_process"
 import { createHash } from "crypto"
@@ -289,7 +289,9 @@ function materializeDirectory(basePath, dirPath, reason, limits, budget, maxFile
   }
 
   for (const filename of files.slice(0, maxFiles)) {
-    const relativePath = join(dirPath, filename)
+    // Relative jsonl paths are POSIX; keep them that way in the injected
+    // headers and truncation hints instead of Windows `refdir\a.md`.
+    const relativePath = isAbsolute(dirPath) ? join(dirPath, filename) : posix.join(dirPath, filename)
     const block = materializeFile(basePath, relativePath, reason, limits, budget)
     if (block) blocks.push(block)
   }
