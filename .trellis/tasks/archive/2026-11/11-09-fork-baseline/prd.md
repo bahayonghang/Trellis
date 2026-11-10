@@ -31,3 +31,10 @@
 - 构建/lint/typecheck 全部通过；core 测试全过；CLI 测试 20 个失败，已在 `FORK_BASELINE.md` 中逐条归类。
 - 计划外发现：pnpm 12.18.0 下 `pnpm install --frozen-lockfile` 失败（`ERR_PNPM_IGNORED_BUILDS`，esbuild），原因是本地提交 `7d2d8742`。本任务只记录，修复方式待决定。
 - 计划外发现：本机 `~/.trellis/` 会让 hook 误判根目录，已补充到 `hook-trellis-root` 的 PRD 中。
+
+## 收尾（2026-11-10）
+
+- 基线工作已在 `2d9bc053` 提交；后续 Windows 修复及 R13 已完成，见
+  `FORK_BASELINE.md` 和归档任务 `11-09-windows-test-failures`。
+- pnpm 12 安装失败已通过批准 esbuild 构建修复（基线文档保留了原始失败记录）。
+- 按续作 Prompt，在 Windows 修复任务归档后归档本任务；不合并上游、不 push。
