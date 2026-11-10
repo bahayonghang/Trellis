@@ -147,6 +147,21 @@
   No unexpected product flow found. LSP tools were unavailable here; executable
   typechecks supplied diagnostics instead. Full-suite totals above remain the
   implement agent's evidence, not a new full-suite run by check.
-- Nothing staged, committed, archived or pushed. Main still must commit only the
-  approved native workflow in marketplace, update the parent gitlink, and rerun
-  GitNexus detection on final staged scope including the currently untracked test.
+- Nothing staged, committed, archived or pushed by the reviewer.
+
+## Main-session Completion
+
+- Marketplace local commit: `1aa9b326baf93257d6142660e49d3120e7f4b4ef`, only
+  `workflows/native/workflow.md`; no remote operation. This commit is local-only,
+  so a future publication of the parent gitlink also needs an accessible child
+  commit. No publication is authorized or performed now.
+- Parent work commit: `cb895dba` (`fix(task): preserve unfinished active work
+  during creation`), with `Ported from mindfold-ai/Trellis#654` attribution and
+  the approved gitlink. Its full pre-commit hook passed core 401 / CLI 1961 tests
+  with the existing skips unchanged.
+- Final staged scope: 14 expected files, HIGH aggregate / 9 create-guard flows,
+  already warned and independently traced. Active LSP probes were inconclusive
+  with unchanged-region advisories; project and strict test typechecks passed.
+- Root `.trellis/workflow.md`, task.py parser, active_task.py, maintainer task
+  files and other marketplace content remain untouched. No --switch flag,
+  start refusal, push, amend or hook bypass. Ready to archive.
