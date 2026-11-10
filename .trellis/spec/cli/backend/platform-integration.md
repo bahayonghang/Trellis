@@ -2170,7 +2170,111 @@ The same rule applies to every other hook that's positioned as "repeated reminde
 
 ### CWD Robustness
 
-The hook uses `find_trellis_root()` to walk up from CWD until it finds `.trellis/`, so it works when the terminal is in a subdirectory (monorepo package, etc.) or when sub-agent spawn inherits a drifted CWD. A `.trellis/` counts only when it contains `workflow.md`, `config.yaml`, or `scripts/`; any other `.trellis/` (for example a tool cache at `~/.trellis/`, which on Windows is an ancestor of `%TEMP%`) is skipped and the walk continues. Without that check the hook picked the home directory as the root and crashed on `import common`. The other hooks still use their own root finders; unifying them is tracked in task `hook-trellis-root`.
+All eight Python platform hook entrypoints use the standalone shared root
+walker described below. This includes optional Claude statusline, Snow and the
+Codex/Copilot private SessionStart hooks; it does not change root policy in
+`common.paths`, `common.active_task`, or JS/TS host integrations.
+
+#### Scenario: Nearest Valid Python Hook Workspace (#650)
+
+##### 1. Scope / Trigger
+
+Any Python platform hook that selects a Trellis workspace must share the same
+marker predicate. A nested Git repository must not hide the enclosing workspace,
+and a home `.trellis/spec-inject` cache must not become a project root.
+
+##### 2. Signatures
+
+```python
+# templates/shared-hooks/trellis_hook_paths.py — stdlib only, no common imports
+find_trellis_root(start: str | Path) -> Path | None
+```
+
+##### 3. Contracts
+
+- Resolve the starting path and inspect it plus every ancestor, including the
+  filesystem root. Select the first `.trellis` **directory** containing a
+  `workflow.md` **file**, `config.yaml` **file**, or `scripts` **directory**.
+- Ignore Git boundaries. Skip empty/cache-only, file-valued, broken and
+  wrong-type markers. An `OSError` inspecting the `.trellis` directory skips
+  only that candidate, not the remaining ancestors. Inspect the three internal
+  marker alternatives independently: an `OSError` for `workflow.md` must not
+  hide an accessible `config.yaml` file or `scripts` directory at the same root.
+  Only advance to a parent when no alternative validates the child. Start-path
+  resolution failures return `None` without output, never falling back to a
+  noncanonical lexical walk.
+- A symlink/junction `.trellis` belongs to its containing workspace, not the
+  target's parent. Keep the existing realpath context containment, including
+  the linked workflow store as a second permitted base.
+- Share the walker, **not hint precedence**: shared SessionStart selects its
+  first nonempty platform env hint, otherwise payload/default cwd;
+  Codex/Copilot use payload/default cwd; workflow uses payload-or-process cwd;
+  shell tries payload then process cwd; native subagent tries payload then
+  process cwd while legacy subagent uses its existing payload/default choice;
+  Snow uses payload, `SNOW_CWD`, then process cwd; statusline uses process cwd.
+  Keep existing Windows shell-path normalization at its existing callers.
+- No root means exit 0, empty stdout/stderr, **before** encoding setup,
+  context/env persistence, shell tickets, Snow logs or statusline Git queries.
+  Bounded stdin decoding remains independent and unchanged.
+- A marker-only partial root is still the selected root: never fall through to
+  a parent or borrow a global `common` package. Consumers requiring task runtime
+  check for local `scripts/common/__init__.py` and `active_task.py` before
+  importing them (a namespace directory alone can lose to a global package); missing
+  dependencies degrade at that root. Do not blanket-catch new runtime failures.
+- Install `trellis_hook_paths.py` through `getSharedHookSupportFiles`, before
+  importers on all twelve Python-hook platforms and optional statusline.
+  It is a support asset, never a fifth event; Snow and ZCode's direct provider
+  must receive the same canonical bytes. No parallel installer or Pi hooks.
+
+##### 4. Validation & Error Matrix
+
+| Layout | Required result |
+| --- | --- |
+| Nested `.git` directory or worktree file | Nearest valid Trellis workspace, regardless of Git |
+| No Git repository | Same workspace/context selection |
+| Closer valid marker | Child wins; no parent task context |
+| Closer invalid marker or inaccessible `.trellis` directory | Continue to next valid ancestor |
+| Child `workflow.md` stat fails, but `config.yaml` is a file | Select child, not parent |
+| Both child file-marker stats fail, but `scripts` is a directory | Select child, not parent |
+| Both child file-marker stats fail and no other alternative validates | Continue to next valid ancestor |
+| No valid marker | Empty output, exit 0, zero runtime/env/log side effects |
+| Valid but partially installed child | Fail soft there; no parent/global runtime import |
+| Linked `.trellis` | Containing workspace selected; legitimate linked context readable |
+| Context/pointer escaping allowed realpath bases | Never inject escaped content |
+
+##### 5. Good / Base / Bad Cases
+
+Base: a normal generated root preserves its existing hook protocol bytes.
+Good: a vendor Git checkout still receives the enclosing task's actual PRD.
+Bad: stopping at `.git`, accepting any `.trellis`, or retrying a parent when a
+valid child lacks its runtime.
+
+##### 6. Tests Required
+
+`test/scripts/hook-root.integration.test.ts` executes installed-map entrypoints
+with complete shipped runtimes and session pointers. Assert actual Claude
+PreToolUse/native Codex SubagentStart PRD selection, all eight root/no-root
+paths, typed marker alternatives, partial-install/global-import isolation,
+no-root stream/subprocess side effects and ordinary-root protocol controls.
+The worktree-vs-HEAD byte comparison is a compatibility smoke at review time,
+not a frozen historical regression oracle; independent PRD/root/envelope assertions
+remain authoritative after HEAD advances. Test private SessionStart Unicode output
+with a non-UTF-8 process stream too, not just a forced UTF-8 test environment.
+Use an actual Windows junction / POSIX directory symlink without added skips;
+mock filesystem-root predicates only to avoid writing to a real drive root.
+Use isolated stdlib `Path` predicate fault injection for inaccessible directories
+and individual marker errors. Assert that a valid sibling alternative keeps the
+child selected, paired with a no-valid-alternative control selecting the parent.
+Verify built init/update/hash receipts, intentional deletion preservation,
+uninstall ownership and npm archive contents for the support dependency.
+
+##### 7. Wrong vs Correct
+
+Wrong: `if (candidate / '.git').exists(): return candidate`, or testing only
+`(candidate / '.trellis').is_dir()`.
+
+Correct: `root = find_trellis_root(existing_hint)`; return silently on `None`,
+then load only that selected root's local runtime and preserve the event schema.
 
 ZCode hook commands must also make the script path itself CWD-robust. Use the ZCode project-root placeholder in `.zcode/config.json`, for example `{{PYTHON_CMD}} "${ZCODE_PROJECT_DIR}/.zcode/hooks/inject-workflow-state.py"`, rather than `{{PYTHON_CMD}} .zcode/hooks/inject-workflow-state.py`. The Python hook's `find_trellis_root()` only runs after Python opens the script; a cwd-relative command can fail before the hook starts if ZCode launches from a nested directory such as `.github/docs/...`.
 

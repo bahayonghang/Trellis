@@ -30,41 +30,10 @@ from pathlib import Path
 from typing import Any
 
 from trellis_hook_input import parse_hook_json, read_hook_stdin
-
-# Force UTF-8 on Windows consoles (cp936/cp1252 otherwise corrupt Chinese paths).
-if sys.platform.startswith("win"):
-    import io as _io
-
-    for _stream_name in ("stdin", "stdout", "stderr"):
-        _stream = getattr(sys, _stream_name, None)
-        if _stream is None:
-            continue
-        if hasattr(_stream, "reconfigure"):
-            try:
-                _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-            except Exception:
-                pass
-        elif hasattr(_stream, "detach"):
-            try:
-                setattr(
-                    sys,
-                    _stream_name,
-                    _io.TextIOWrapper(_stream.detach(), encoding="utf-8", errors="replace"),
-                )
-            except Exception:
-                pass
-
+from trellis_hook_paths import find_trellis_root as _find_repo_root
 
 DEFAULT_MAX_BYTES = 7500
 COMPACT_MAX_BYTES = 2800
-
-
-def _find_repo_root(start: Path) -> Path:
-    cur = start.resolve()
-    for candidate in [cur, *cur.parents]:
-        if (candidate / ".trellis").is_dir():
-            return candidate
-    return cur
 
 
 def _run(cmd: list[str], cwd: Path) -> str:
@@ -557,6 +526,27 @@ def main() -> int:
         cwd_hint = stdin_ctx.get("cwd") if isinstance(stdin_ctx.get("cwd"), str) else None
         cwd = Path(cwd_hint or os.environ.get("SNOW_CWD") or os.getcwd())
         repo = _find_repo_root(cwd)
+        if repo is None:
+            return 0
+
+        # Force UTF-8 only after selecting a Trellis workspace.
+        if sys.platform.startswith("win"):
+            import io as _io
+            for _stream_name in ("stdin", "stdout", "stderr"):
+                _stream = getattr(sys, _stream_name, None)
+                if _stream is None:
+                    continue
+                if hasattr(_stream, "reconfigure"):
+                    try:
+                        _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+                    except Exception:
+                        pass
+                elif hasattr(_stream, "detach"):
+                    try:
+                        setattr(sys, _stream_name, _io.TextIOWrapper(_stream.detach(), encoding="utf-8", errors="replace"))
+                    except Exception:
+                        pass
+
         context = build_context(repo, mode=mode, stdin_ctx=stdin_ctx)
 
         log_dir = repo / ".snow" / "log"

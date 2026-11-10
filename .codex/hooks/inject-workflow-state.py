@@ -43,30 +43,7 @@ import sys
 from pathlib import Path
 
 from trellis_hook_input import read_hook_json
-
-# Force UTF-8 on stdin/stdout/stderr on Windows. Default codepage there is
-# cp936 / cp1252 / etc. — non-ASCII content (Chinese task names, prd snippets)
-# both in stdin (hook payload from host CLI) and stdout (our emitted blocks)
-# raises UnicodeDecodeError / UnicodeEncodeError. Equivalent to `python -X utf8`
-# but applied per-stream so we don't depend on host CLI's command wiring.
-if sys.platform.startswith("win"):
-    import io as _io
-    for _stream_name in ("stdin", "stdout", "stderr"):
-        _stream = getattr(sys, _stream_name, None)
-        if _stream is None:
-            continue
-        if hasattr(_stream, "reconfigure"):
-            try:
-                _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-            except Exception:
-                pass  # Optional Windows stream setup; keep hook startup non-fatal.
-        elif hasattr(_stream, "detach"):
-            try:
-                setattr(sys, _stream_name, _io.TextIOWrapper(_stream.detach(), encoding="utf-8", errors="replace"))
-            except Exception:
-                pass  # Optional Windows stream setup; keep hook startup non-fatal.
-from typing import Optional
-
+from trellis_hook_paths import find_trellis_root
 
 # Bootstrap notice for Codex while the session has no active task. Codex does not
 # get the full SessionStart overview; this short reminder points the main session
@@ -74,32 +51,6 @@ from typing import Optional
 CODEX_NO_TASK_BOOTSTRAP_NOTICE = """<trellis-bootstrap>
 If you have not already loaded Trellis context this session, read the `trellis-start` skill once.
 </trellis-bootstrap>"""
-
-
-# ---------------------------------------------------------------------------
-# CWD-robust Trellis root discovery (fixes hook-path-robustness for this hook)
-# ---------------------------------------------------------------------------
-
-def find_trellis_root(start: Path) -> Optional[Path]:
-    """Walk up from start to find directory containing .trellis/.
-
-    Handles CWD drift: subdirectory launches, monorepo packages, etc.
-    A `.trellis/` without workflow.md, config.yaml or scripts/ is not a
-    Trellis project (e.g. a tool cache in the home directory, which on
-    Windows is an ancestor of %TEMP%); skip it and keep walking.
-    Returns None if no Trellis project is found (silent no-op).
-    """
-    cur = start.resolve()
-    while cur != cur.parent:
-        trellis_dir = cur / ".trellis"
-        if trellis_dir.is_dir() and (
-            (trellis_dir / "workflow.md").is_file()
-            or (trellis_dir / "config.yaml").is_file()
-            or (trellis_dir / "scripts").is_dir()
-        ):
-            return cur
-        cur = cur.parent
-    return None
 
 
 # ---------------------------------------------------------------------------
@@ -365,7 +316,7 @@ def resolve_breadcrumb_key(
 
 
 def build_breadcrumb(
-    task_id: Optional[str],
+    task_id: str | None,
     status: str,
     templates: dict[str, str],
     source: str | None = None,
@@ -409,6 +360,28 @@ def main() -> int:
     root = find_trellis_root(cwd)
     if root is None:
         return 0  # not a Trellis project
+
+    # A valid marker may be a partial installation. Never borrow global common.
+    if not (root / ".trellis" / "scripts" / "common" / "active_task.py").is_file() or not (root / ".trellis" / "scripts" / "common" / "__init__.py").is_file():
+        return 0
+
+    # Configure streams only after confirming this hook owns the workspace.
+    if sys.platform.startswith("win"):
+        import io as _io
+        for _stream_name in ("stdin", "stdout", "stderr"):
+            _stream = getattr(sys, _stream_name, None)
+            if _stream is None:
+                continue
+            if hasattr(_stream, "reconfigure"):
+                try:
+                    _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+                except Exception:
+                    pass  # Optional Windows stream setup; keep hook startup non-fatal.
+            elif hasattr(_stream, "detach"):
+                try:
+                    setattr(sys, _stream_name, _io.TextIOWrapper(_stream.detach(), encoding="utf-8", errors="replace"))
+                except Exception:
+                    pass  # Optional Windows stream setup; keep hook startup non-fatal.
 
     config = _read_trellis_config(root)
     if prompt_has_skip_keyword(data.get("prompt", ""), _resolve_skip_keyword(config)):

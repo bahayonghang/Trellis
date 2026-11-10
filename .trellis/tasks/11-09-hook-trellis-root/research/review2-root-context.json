@@ -1,0 +1,84 @@
+{
+  "status": "found",
+  "contentAvailability": {
+    "requested": true,
+    "profile": "full",
+    "available": true,
+    "scope": "full"
+  },
+  "symbol": {
+    "uid": "Function:packages/cli/src/templates/shared-hooks/trellis_hook_paths.py:find_trellis_root",
+    "name": "find_trellis_root",
+    "kind": "Function",
+    "filePath": "packages/cli/src/templates/shared-hooks/trellis_hook_paths.py",
+    "startLine": 7,
+    "endLine": 30,
+    "content": "def find_trellis_root(start: str | Path) -> Path | None:     \"\"\"Return the nearest valid Trellis ancestor, including the filesystem root.     A cache/empty marker is not a workspace. Git boundaries are irrelevant;     a linked .trellis validates through its target but belongs to its container.     \"\"\"     try:         current = Path(start).resolve()     except (OSError, RuntimeError, ValueError):         # Never fall back to a lexical path after failed canonicalization.         return None     for candidate in (current, *current.parents):         marker = candidate / \".trellis\"         try:             if marker.is_dir() and (                 (marker / \"workflow.md\").is_file()                 or (marker / \"config.yaml\").is_file()                 or (marker / \"scripts\").is_dir()             ):                 return candidate         except OSError:             # An unreadable marker must not hide an accessible valid ancestor.             continue     return None"
+  },
+  "epistemic": "exact",
+  "incoming": {
+    "calls": [
+      {
+        "uid": "Function:packages/cli/src/templates/claude/hooks/statusline.py:_find_trellis_dir",
+        "name": "_find_trellis_dir",
+        "filePath": "packages/cli/src/templates/claude/hooks/statusline.py"
+      },
+      {
+        "uid": "Function:packages/cli/src/templates/codex/hooks/session-start.py:main",
+        "name": "main",
+        "filePath": "packages/cli/src/templates/codex/hooks/session-start.py"
+      },
+      {
+        "uid": "Function:packages/cli/src/templates/copilot/hooks/session-start.py:main",
+        "name": "main",
+        "filePath": "packages/cli/src/templates/copilot/hooks/session-start.py"
+      },
+      {
+        "uid": "Function:packages/cli/src/templates/shared-hooks/inject-shell-session-context.py:_resolve_trellis_root",
+        "name": "_resolve_trellis_root",
+        "filePath": "packages/cli/src/templates/shared-hooks/inject-shell-session-context.py"
+      },
+      {
+        "uid": "Function:packages/cli/src/templates/shared-hooks/inject-subagent-context.py:find_repo_root",
+        "name": "find_repo_root",
+        "filePath": "packages/cli/src/templates/shared-hooks/inject-subagent-context.py"
+      },
+      {
+        "uid": "Function:packages/cli/src/templates/shared-hooks/inject-workflow-state.py:main",
+        "name": "main",
+        "filePath": "packages/cli/src/templates/shared-hooks/inject-workflow-state.py"
+      },
+      {
+        "uid": "Function:packages/cli/src/templates/shared-hooks/session-start.py:main",
+        "name": "main",
+        "filePath": "packages/cli/src/templates/shared-hooks/session-start.py"
+      },
+      {
+        "uid": "Function:packages/cli/src/templates/snow/hooks/write-trellis-context.py:main",
+        "name": "main",
+        "filePath": "packages/cli/src/templates/snow/hooks/write-trellis-context.py"
+      }
+    ]
+  },
+  "outgoing": {},
+  "processes": [
+    {
+      "id": "proc_267_main",
+      "name": "Main → Find_trellis_root",
+      "step_index": 3,
+      "step_count": 3
+    },
+    {
+      "id": "proc_358_main",
+      "name": "Main → Find_trellis_root",
+      "step_index": 3,
+      "step_count": 3
+    },
+    {
+      "id": "proc_95_main",
+      "name": "Main → Find_trellis_root",
+      "step_index": 4,
+      "step_count": 4
+    }
+  ]
+}

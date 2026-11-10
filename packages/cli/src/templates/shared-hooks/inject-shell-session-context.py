@@ -24,15 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from trellis_hook_input import read_hook_json
-
-# Hook hosts send UTF-8 JSON regardless of the process locale.
-_stdin_reconfigure = getattr(sys.stdin, "reconfigure", None)
-if callable(_stdin_reconfigure):
-    try:
-        _stdin_reconfigure(encoding="utf-8", errors="replace")
-    except (OSError, ValueError):
-        pass
-
+from trellis_hook_paths import find_trellis_root as _find_trellis_root
 
 DIR_WORKFLOW = ".trellis"
 DIR_RUNTIME = ".runtime"
@@ -96,16 +88,6 @@ def _resolve_trellis_root(hook_input: dict[str, Any]) -> Path | None:
         if root is not None:
             return root
     return None
-
-
-def _find_trellis_root(start: Path) -> Path | None:
-    current = start.resolve()
-    while True:
-        if (current / DIR_WORKFLOW).is_dir():
-            return current
-        if current == current.parent:
-            return None
-        current = current.parent
 
 
 def _runtime_ticket_dir(root: Path) -> Path:
@@ -265,6 +247,17 @@ def main() -> int:
     root = _resolve_trellis_root(hook_input)
     if root is None:
         return 0
+
+    if not (root / DIR_WORKFLOW / "scripts" / "common" / "active_task.py").is_file() or not (root / DIR_WORKFLOW / "scripts" / "common" / "__init__.py").is_file():
+        return 0
+
+    # Hook input is decoded by the bounded reader; only owned workspaces need setup.
+    _stdin_reconfigure = getattr(sys.stdin, "reconfigure", None)
+    if callable(_stdin_reconfigure):
+        try:
+            _stdin_reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            pass
 
     if not _has_context_identity(hook_input):
         return 0

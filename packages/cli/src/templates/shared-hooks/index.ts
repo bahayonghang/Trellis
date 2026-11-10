@@ -25,7 +25,10 @@ export interface HookScript {
 }
 
 /** Runtime dependencies, not event entrypoints or platform capabilities. */
-const SHARED_HOOK_SUPPORT_FILES = ["trellis_hook_input.py"] as const;
+const SHARED_HOOK_SUPPORT_FILES = [
+  "trellis_hook_input.py",
+  "trellis_hook_paths.py",
+] as const;
 
 export function getSharedHookSupportFiles(): HookScript[] {
   return SHARED_HOOK_SUPPORT_FILES.map((name) => ({
