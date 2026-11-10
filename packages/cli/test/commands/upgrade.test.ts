@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildUpgradeCommand,
   resolveUpgradeTag,
@@ -6,6 +6,18 @@ import {
 } from "../../src/commands/upgrade.js";
 
 describe("upgrade command", () => {
+  const originalPlatform = process.platform;
+
+  afterEach(() => {
+    Object.defineProperty(process, "platform", { value: originalPlatform });
+  });
+
+  // upgrade() builds its plan for process.platform; the POSIX assertions
+  // below would see cmd.exe and `where trellis` on a Windows host.
+  function mockPlatform(platform: NodeJS.Platform): void {
+    Object.defineProperty(process, "platform", { value: platform });
+  }
+
   it("defaults stable versions to latest", () => {
     expect(resolveUpgradeTag("0.5.12")).toBe("latest");
   });
@@ -74,6 +86,7 @@ describe("upgrade command", () => {
   });
 
   it("executes npm install for real upgrades", async () => {
+    mockPlatform("linux");
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const runner = vi.fn(() => ({ status: 0, signal: null }));
 
@@ -93,6 +106,7 @@ describe("upgrade command", () => {
   });
 
   it("fails when npm exits non-zero", async () => {
+    mockPlatform("linux");
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const runner = vi.fn(() => ({ status: 1, signal: null }));
 

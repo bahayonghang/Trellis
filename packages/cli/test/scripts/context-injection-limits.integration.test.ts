@@ -84,7 +84,8 @@ ${code}
   if (r.status !== 0) {
     throw new Error(`probe failed (rc=${r.status}): ${r.stderr}`);
   }
-  return r.stdout;
+  // Text-mode stdout is CRLF on Windows; assertions compare LF content.
+  return r.stdout.replace(/\r\n/g, "\n");
 }
 
 function runConfigProbe(tmp: string, code: string): string {

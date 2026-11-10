@@ -139,7 +139,9 @@ describe("trellis template constants", () => {
       path.join(repoRoot, "marketplace/workflows/native/workflow.md"),
       "utf-8",
     );
-    expect(marketplaceNative).toBe(workflowMdTemplate);
+    // The submodule has no .gitattributes, so core.autocrlf checks it out as
+    // CRLF on Windows. Line endings are not mirror drift; compare content.
+    expect(marketplaceNative.replace(/\r\n/g, "\n")).toBe(workflowMdTemplate);
   });
 
   it("marketplace TDD workflow planning breadcrumbs include behavior gates", () => {
