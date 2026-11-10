@@ -41,6 +41,32 @@ load the right guidance.
   `.trellis/scripts/common/packages_context.py`, which scans
   `.trellis/spec/<package>/<layer>/index.md` for each configured package.
 
+## Dependency Build Scripts (pnpm 12)
+
+`package.json` pins `packageManager: pnpm@12.18.0`; CI and publish install
+with `pnpm install --frozen-lockfile`. pnpm 12 fails an install with
+`ERR_PNPM_IGNORED_BUILDS` when a dependency has a build script that is
+neither allowed nor denied, so every dependency with a postinstall must be
+listed in `pnpm-workspace.yaml`:
+
+```yaml
+allowBuilds:
+  esbuild: true   # postinstall verifies the platform binary
+```
+
+| Situation | Result |
+| --- | --- |
+| Dependency listed `true` | Build script runs; install passes |
+| Dependency listed `false` | Build script skipped silently; install passes |
+| Dependency with a build script not listed | Install fails in CI, `just deps`, and fresh clones |
+
+- Add entries with `pnpm approve-builds <pkg>` (writes the key above), not
+  with a command-line flag. `--config.strict-dep-builds=false` only hides the
+  failure on one machine.
+- After adding or upgrading a dependency that ships a build script, verify
+  with `pnpm install --frozen-lockfile` in a clean worktree; an existing
+  `node_modules` can mask the error.
+
 ## Checks
 
 ```bash
