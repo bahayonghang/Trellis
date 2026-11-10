@@ -300,7 +300,9 @@ def _persist_context_key_for_bash(context_key: str | None) -> None:
     try:
         if _last_context_key_export(env_file) == export_line:
             return
-        with open(env_file, "a", encoding="utf-8") as handle:
+        # newline="\n": the host sources this file with bash, which would keep
+        # the "\r" of a Windows text-mode CRLF inside TRELLIS_CONTEXT_ID.
+        with open(env_file, "a", encoding="utf-8", newline="\n") as handle:
             handle.write(f"{export_line}\n")
     except OSError:
         pass  # Optional shell bridge; keep session-start non-fatal.
