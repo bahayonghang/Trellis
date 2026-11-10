@@ -132,6 +132,77 @@ expect(inquirer.prompt).not.toHaveBeenCalled();
 
 ---
 
+## Pi Context-Envelope Fixture Isolation
+
+### 1. Scope / Trigger
+
+`test/templates/pi.test.ts` evaluates the real extension template in a VM.
+Envelope/cache tests use a minimal `get_context.py` fixture, not the shipped
+Python implementation. Real interpreter startup exceeded the product's 1500 ms
+deadline during a parallel Windows run; do not make these unit contracts depend
+on that startup latency.
+
+### 2. Signatures
+
+- `createMinimalTrellisRoot(): string` registers its script path and root.
+- `loadExtensionInternals(cwd?, env?, contextSpawnSync?)` accepts an explicit
+  external-boundary override for deterministic process-failure tests.
+
+### 3. Contracts
+
+Intercept **only** `node:child_process.spawnSync` calls for registered fixture
+scripts: exact platform Python command, actual script path, actual `options.cwd`,
+and either no extra args or `--mode phase --platform pi`. Dispatch per call, not
+by the VM's initial cwd: session root switches must select the new fixture.
+Default stdout and the runnable Python fixture share output constants.
+
+Keep the template, temporary filesystem, parser, caches and envelopes real.
+Other programs/scripts/cwd/argv, including optional native call forms, pass
+through; `spawn` remains real for fake-Pi Node protocol tests. Keep host-env
+scrubbing in `test/setup.ts`. Never fix this unit-test coupling by increasing
+the product timeout, adding Vitest retries/skips, or mocking `workflowOverview`.
+
+### 4. Validation / Error Matrix
+
+| Boundary | Assertion |
+| --- | --- |
+| Overview / phase success | Exact command, script, argv, cwd, session env, UTF-8 encoding, `timeout: 1500`, `windowsHide: true`; trimmed output reaches real envelopes |
+| Native process unavailable or observed phase-timeout result | Registered fixtures still yield successful envelopes without calling native `spawnSync` |
+| Explicit fixture override: status null / ETIMEDOUT, nonzero status, thrown error | Real `runContextScript` returns empty; real `workflowOverview` omits output; pair with success controls |
+| Phase fails after overview succeeds | Overview remains present, workflow absent; startup cache retains that omission |
+| Nonfixture process | Original arguments forwarded to native `spawnSync`; actual child `spawn` protocol tests still execute Node |
+
+### 5. Good / Base / Bad Cases
+
+Base: deterministic fixture stdout enters the real template. Good: switching
+roots resolves the actual destination script, while Node children remain real.
+Bad: blanket-stubbing child processes or replacing a Trellis context builder.
+
+### 6. Tests Required
+
+Keep the original positive envelope assertions. Add deterministic red/green
+regressions at the native process boundary, paired success/failure tests,
+root-switch coverage, exact invocation assertions and nonfixture passthrough.
+Any real-Python fixture smoke is separate from these timing-sensitive unit
+contracts; run with the checkout interpreter, without guessed deadlines.
+Package `tsc` includes only `src/`: validate VM-helper changes with a strict
+TypeScript program that includes this test file and its imports as well.
+Run Prettier explicitly on the test file; the package formatter targets `src/`.
+
+### 7. Wrong vs Correct
+
+```typescript
+// Wrong: also bypasses Node child/protocol integration.
+vi.mock("node:child_process", () => ({ spawnSync: vi.fn(), spawn: vi.fn() }));
+
+// Correct: only a registered minimal context invocation gets fixture stdout.
+// All other calls retain their original native API arguments.
+if (!registeredContextInvocation) return childProcess.spawnSync(...call);
+return contextSpawnSync ? contextSpawnSync(command, args, options) : fixtureResult;
+```
+
+---
+
 ## DO / DON'T
 
 ### DO

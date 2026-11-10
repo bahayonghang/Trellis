@@ -181,6 +181,45 @@ R13 verification (2026-11-10):
 
 Any failing test needs investigation; no known environment workaround is required.
 
+## Follow-up: Pi Context-Envelope Test Flake (2026-11-10)
+
+A later ordinary pre-commit run failed the initial Pi envelope test (CLI
+1936 passed / 1 failed / 35 existing skipped). That original call was not
+instrumented. A subsequent parallel subset captured the unchanged fixture's
+real phase subprocess timing out: **1529 ms**, deadline **1500 ms**, status
+null / `ETIMEDOUT`; its preceding overview succeeded in **383 ms**. Replaying
+that result reproduced overview present / workflow absent. Windows startup's
+underlying stall source (scheduler, scanning, etc.) is **not established**, and
+there is no evidence the archive-scope port changed Pi product behavior.
+Evidence: `.trellis/tasks/11-09-archive-commit-scope/research/pi-context-precommit-flake.md`.
+
+- Fixed only `packages/cli/test/templates/pi.test.ts` VM fixture isolation.
+  Registered minimal `get_context.py` invocations receive deterministic output
+  at the external `spawnSync` boundary, selected by actual script/cwd/argv.
+  Their runnable Python scripts share the output constants. Template logic,
+  filesystem, parsing, caches and envelopes remain real; other child-process
+  calls pass through. Both fake-Pi Node child tests remain unchanged and pass.
+- Deterministic red: **2 failed / 47 passed** before isolation. Green: Pi
+  **55 passed** (8 new cases), plus archive **12 passed**, no skips. Explicit
+  boundary success, status-null timeout, nonzero and thrown-error tests pin
+  the existing omission behavior separately. No timeout/retry/skip increase.
+- A separate smoke extracted the actual fixture factory/constants and ran both
+  overview and phase scripts with real checkout **CPython 3.9.25**; both passed.
+  All five required checks passed through `uv run --locked` with real pnpm's
+  directory prefixed to PATH: core **401 passed / 2 existing skipped**, CLI
+  **1945 passed / 35 existing skipped**, Python **0 errors / 68 existing warnings**.
+  No diagnostic preload or shell PI-environment unsetting was used.
+  Independent review additionally fixed a test-only environment typing error;
+  strict test-inclusive TypeScript validation reported **0 diagnostics** and
+  focused Pi/archive tests again passed **67 / 67**, without skips. The usual
+  package typecheck excludes tests; Prettier was run explicitly on this file.
+- Remaining product consideration: a real phase timeout still silently omits
+  workflow and memoizes that startup omission. Runtime resilience/latency
+  policy needs a separate scope decision; the extension, `.pi` dogfood,
+  product deadline and harness settings were not changed.
+
+Historical baseline and R13 counts above remain unchanged.
+
 ## Known Issues
 
 1. **pnpm 12 install failed by default (fixed).** Commit `7d2d8742` moved the
