@@ -30,3 +30,22 @@
 ## Dependencies
 
 `fork-baseline`。
+
+## Preflight / Pending Decision (2026-11-10)
+
+- Reviewed upstream #654 and the named session-identity tasks; evidence and
+  selective-port boundary are in `research/upstream-654.md`. No same-hunk
+  overlap found. #608 is already a merged ancestor of this fork; do not modify
+  its resolver behavior or maintainer-owned task artifacts.
+- Upstream also adds `start --switch`, but this PRD requires explicit start
+  switching to remain unchanged. Port only create preservation and corresponding
+  helper/tests/guidance; do not introduce the upstream start restriction.
+- Product/script twins are byte-identical; the dogfood workflow is not identical
+  to the template and must remain untouched under the continuation Prompt.
+- **Blocked before implementation:** the required product workflow documentation
+  change also needs a matching update to `marketplace/workflows/native/workflow.md`
+  or the intentional mirror regression test fails. Ask permission for a narrow
+  local marketplace submodule commit and gitlink update; no push/PR/release.
+  Do not weaken or skip the mirror test or silently omit workflow guidance.
+- Task remains `planning`; no product code, workflow, submodule or activation
+  changes have been made for #654.
