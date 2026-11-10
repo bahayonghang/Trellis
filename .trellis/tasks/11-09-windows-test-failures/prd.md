@@ -27,7 +27,7 @@
 | R10 | platforms byte-for-byte | 单独运行耗时 5.8 s，整套并行时 11.7 s；同文件另有 15.1 s、9.9 s、8.8 s 的遍历全平台用例，其它文件也有 9.7 s 的 | 测试配置：Windows 上 `testTimeout` 设为 30 s，Linux 保持 10 s |
 | R11 | core worker-inbox（间歇性） | 用 rename 覆盖 `.seq` 时，若其它进程（杀毒软件、索引服务）正打开该文件，Windows 返回 `EPERM`；本机实测约每 3000–6000 次替换出现 1 次，hook 跑第 3 次提交时撞上 | 产品：`writeSidecar` 在 win32 上对 EPERM/EACCES/EBUSY 短退避重试 |
 | R12 | CLI channel-wait-warning（间歇性） | `scheduleSupervisorTimeoutWarning` 以 fire-and-forget 方式追加警告；测试看到警告行时，sidecar 可能仍在写入，teardown 的 `rmSync` 撞上新文件，报 `ENOTEMPTY` | 测试：teardown 的 `rmSync` 加 `maxRetries: 10, retryDelay: 20` |
-| R13 | CLI ablate.integration #5（间歇性，**未修复**） | `utils/ablation-store.ts` 的目录 rename 覆盖与 R11 同类，Windows 偶发 `EPERM`；同类未改的还有 `ablation-store.ts:545,786,867`、`utils/atomic-write.ts:22`、Python `templates/trellis/scripts/common/io.py:146` 的 `os.replace` | 产品：抽一个同步版 rename 重试 helper（参考 core `seq.ts` 的 `renameReplacing()`）；Python 对 `PermissionError` 做同样的重试 |
+| R13 | CLI ablate.integration #5（间歇性，**代码已修复，待 hook 连续验证**） | `utils/ablation-store.ts` 的目录 rename 覆盖与 R11 同类，Windows 偶发 `EPERM`；同类未改的还有 `ablation-store.ts:545,786,867`、`utils/atomic-write.ts:22`、Python `templates/trellis/scripts/common/io.py:146` 的 `os.replace` | 产品：抽一个同步版 rename 重试 helper（参考 core `seq.ts` 的 `renameReplacing()`）；Python 对 `PermissionError` 做同样的重试 |
 
 ## Acceptance Criteria
 
@@ -37,7 +37,7 @@
 - [x] R3：OpenCode 注入的目录条目标题和截断提示使用 `/`。
 - [x] `pnpm lint`、`pnpm typecheck`、`lint:py` 通过。
 - [x] `FORK_BASELINE.md` 记录修复后的结果。
-- [ ] R13：上述替换点在 Windows 上对瞬时错误码重试，非 Windows 不变；有注入错误的单元测试；连续 3 次 hook 提交不再出现 rename 类失败。
+- [x] R13：上述替换点在 Windows 上对瞬时错误码重试，非 Windows 不变；有注入错误的单元测试；连续 3 次成功提交的完整 hook 测试没有 rename 类失败（4075da63、c582e302、764cddc0）。
 
 ## Out of Scope
 
@@ -52,4 +52,75 @@
 - spec 更新：`guides/cross-platform-thinking-guide.md`（Script Execution Rule 7、Line Endings Rule 3）、`cli/unit-test/index.md`（Timeouts）、`cli/backend/platform-integration.md`（`find_trellis_root` 有效根规则）。
 - R11：提交时 hook 中出现 core `worker-inbox` 间歇性 `EPERM`；本机用 3000 次 write+rename 循环复现到 1 次。已在 `seq.ts` 增加 `renameReplacing()` 和 3 个测试（Windows 重试、非 Windows 不重试、超过重试上限后放弃）。其余替换点（CLI `writeFileAtomic`、`ablation-store`、`update.ts`、Python `os.replace`）记录到 `windows-ci`。
 - R12：第 4 次提交的 hook 中出现 `channel-wait-warning` teardown `ENOTEMPTY`。修复后该文件连续 5 次运行（每次 17 个测试）全部通过。
-- R13（未完成）：docs 提交的 hook 中出现 `ablate.integration` #5 `EPERM`。本任务保持 in_progress，修完 R13 后再归档。
+- R13（当时未完成）：docs 提交的 hook 中出现 `ablate.integration` #5 `EPERM`。本任务保持 in_progress，修完 R13 后再归档。
+
+## R13 execution evidence (2026-11-10)
+
+- Added CLI `utils/rename.ts:renameSyncWithRetry`, used by `writeFileAtomic`
+  and all three `ablation-store.ts` rename sites (staging, mixed-file restore,
+  directory restore). Windows-only `EPERM`/`EACCES`/`EBUSY`: one initial attempt
+  plus 10 retries, `Atomics.wait` at 10, 20, …, 100 ms (550 ms total).
+  Non-Windows and other errors still fail immediately with the original error.
+- Python `write_text_atomic` retries only Windows `PermissionError` with the
+  same budget. Existing bool / `BaseException` / fd ownership / cleanup
+  behavior is unchanged. Verified the template/dogfood pair was byte-identical
+  before editing and after mirroring. No core or `update.ts` changes.
+- Mandatory red/green: injected failures first; 25 failed / 42 passed against
+  unfixed product code. Green: 81 passed / 2 existing skips across rename,
+  atomic-write, ablation-store, Python io and ablate integration. A probe fixture
+  initially injected the backoff interrupt too early; corrected it and confirmed
+  both corrected text/JSON probes fail against isolated HEAD Python source.
+  Added 48 cases overall; no skips, Vitest retries or timeout changes.
+- Independent check fixed newly discovered test isolation in shared
+  `test/setup.ts`: scrub host `PI_SESSION_ID`, `PI_SESSIONID`, and
+  `PI_SUBAGENT_PARENT_SESSION`. `evaluateExtension` copies host env into its
+  VM, overriding no-session/no-parent fixtures. No Pi runtime/helper changes;
+  explicit test env still works. Three new VM sentinel cases execute the
+  real setup and preserve unrelated env. Red: 5 failed / 45 passed (three
+  sentinels and two existing Pi tests); green: 50/50. Combined R13/Pi/setup
+  focused run: 131 passed / 2 existing skips. Total new regression cases: 51.
+- Validation: ordinary `pnpm lint`, `pnpm typecheck`, CLI `lint:py` (0 errors,
+  68 warnings in untouched files), `pnpm build`, and `pnpm test` passed
+  with Pi host env inherited (no env-unset workaround). Full Windows tests:
+  core 401 passed / 2 skipped; CLI 1920 passed / 35 skipped. Baseline skip
+  counts unchanged. `git diff --check` and all 28 Python twin byte comparisons
+  passed.
+- Both Python copies passed `ast.parse(..., feature_version=(3, 9))`.
+  Runtime tests used Python 3.14.7; no Python 3.9 interpreter is installed.
+- Spec contracts updated in filesystem-safety, script-conventions,
+  commands-ablate and cross-platform guide. Sibling `commands/update.ts`
+  migration renames (four sites) intentionally remain outside R13. The
+  one-shot CLI `channel/store/paths.ts:migrateLegacyChannels` rename also
+  remains unchanged: it retains the source and warns on failure.
+- Independent review confirmed retry limits, original errors/data, caller
+  cleanup, fd ownership and conflict checks. Ruff I001 (one excess blank
+  after imports) and SIM105 (cleanup try/except/pass) also existed in HEAD;
+  narrowly fixed in both Python twins using equivalent `suppress(OSError)`.
+  Both files now pass I001/SIM105 and edit-time Python diagnostics. The
+  unlink target remains the owned `mkstemp` file; production sleep is the
+  intentional bounded backoff, not a test delay. Active `source=lsp` tooling
+  is not exposed to this worker; main-session active LSP rescan remains.
+- GitNexus `detect-changes --scope all`: HIGH, 10 affected processes;
+  changed existing product functions are only the four pre-authorized ones.
+  The new helper/tests were not in the starting index and were reviewed
+  directly. `JSON_READ_INVALID` is a stale line-mapping hit after import
+  movement, not a value change. Compare against `main`: CRITICAL, 19 flows,
+  107 files including prior committed fork changes, not new R13 scope.
+- Main-session final review completed. Active LSP probes for all 11 changed
+  code/test paths were inconclusive (push-only/no server answer), not a clean
+  verdict; project lint/typecheck, Ruff, and runtime tests provide validation.
+  Session diagnostics retain only the owned-temp unlink path-traversal heuristic
+  on the two Python twins; the target is the path returned by `mkstemp`.
+- Three successful real pre-commit runs passed full core/CLI suites without
+  rename failures: `4075da63` (Pi test isolation), `c582e302` (CLI retries),
+  `764cddc0` (Python retries). A failed attempt before `c582e302` stopped at
+  lint-staged's broken Scoop pnpm shim before tests; Node `spawnSync` confirmed
+  that prepending the existing real `pnpm.exe` directory resolves it. No hooks
+  were bypassed, no test environment keys were unset, no push/amend performed.
+- GitNexus 1.6.12 CLI and index were configured with explicit user approval,
+  using `npx` and `analyze --index-only`; no global install, project dependency,
+  or instruction-file edits. Main refreshed the index and ran staged
+  `detect-changes` before every commit. Its flow attribution over-expanded
+  (even a test sentinel `PATH` mapped to unrelated flows); exact git diffs and
+  direct call-site review bounded the actual edit scope instead of treating
+  those graph results as proof of correctness. R13 is ready to archive.

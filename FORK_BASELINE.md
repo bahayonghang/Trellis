@@ -115,8 +115,8 @@ commits. All are intermittent:
   test removed the temp dir. Fixed with `maxRetries` on that `rmSync`.
 - `packages/cli/test/commands/ablate.integration.test.ts` (#5) failed once
   with `EPERM` renaming a restore temp dir onto `.codex/hooks` in
-  `utils/ablation-store.ts`. Same cause as the `.seq` failure. **R13 code
-  fixed (2026-11-10), hook streak pending**: CLI `renameSyncWithRetry`
+  `utils/ablation-store.ts`. Same cause as the `.seq` failure. **R13 fixed
+  and verified (2026-11-10)**: CLI `renameSyncWithRetry`
   now covers all three ablation rename sites and `writeFileAtomic`;
   Python `common/io.py` and its byte-identical dogfood twin retry
   `PermissionError` on Windows. Each allows 10 retries at 10–100 ms
@@ -147,8 +147,10 @@ R13 verification (2026-11-10):
   workaround is required.
 - Both Python copies passed Python 3.9 grammar parsing. Runtime probes used
   installed Python 3.14.7; a real Python 3.9 interpreter is not installed.
-- Three consecutive real hook commits remain for the main session; no
-  commit or archive was performed during implementation.
+- Three successful real hook commits passed the full suite without rename
+  failures: `4075da63`, `c582e302`, `764cddc0`. No new skips, hook bypass,
+  test-env unsetting, amend or push. One earlier attempt stopped before tests
+  because lint-staged selected the broken Scoop pnpm shim; see Known Issues 2.
 
 Any failing test needs investigation; no known environment workaround is required.
 
@@ -166,7 +168,13 @@ Any failing test needs investigation; no known environment workaround is require
 2. **Local scoop pnpm shim is broken.** `~/scoop/apps/pnpm/current/pnpm.exe`
    is missing (a `.pnpm.exe.*.retired` file remains), so the `pnpm` shim
    fails to start. The baseline ran with `~/scoop/apps/pnpm/current/pnpm.cmd`
-   prepended to `PATH`. Machine-local; not a repository issue.
+   prepended to `PATH`. This works for Bash, but Node subprocesses (including
+   lint-staged's nested `pnpm`) can still resolve the broken shim. For those,
+   prepend the directory of the existing real executable reported by
+   `pnpm exec node -p 'process.env.npm_execpath'`; verify with Node
+   `spawnSync("pnpm", ["--version"])` before committing. This is a process-local
+   `PATH` workaround, not a global install change. Machine-local; not a
+   repository issue.
 3. **`docs-site` submodule is not initialized** in this checkout. No test
    needed it.
 4. **Dogfood `.trellis/` is older than the CLI.** The local
