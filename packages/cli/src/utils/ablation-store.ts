@@ -16,6 +16,7 @@ import { z } from "zod";
 
 import { VERSION } from "../constants/version.js";
 import { writeFileAtomic } from "./atomic-write.js";
+import { renameSyncWithRetry } from "./rename.js";
 import {
   assertSafeManagedPath,
   lstatIfPresent,
@@ -542,7 +543,7 @@ export function stageAblationTransaction(
       verifyBackupEntry(tempPaths.transactionDir, entry);
     }
     writeState(tempPaths, state);
-    fs.renameSync(tempPaths.transactionDir, paths.transactionDir);
+    renameSyncWithRetry(tempPaths.transactionDir, paths.transactionDir);
   } catch (error) {
     removeExternalTransactionDir(tempPaths.transactionDir);
     throw error;
@@ -783,7 +784,7 @@ function restoreEntry(
         }
         fs.unlinkSync(tempPath);
       } else {
-        fs.renameSync(tempPath, destination);
+        renameSyncWithRetry(tempPath, destination);
       }
     } catch (error) {
       try {
@@ -864,7 +865,7 @@ function restoreEntry(
       }
     }
     if (!verifyExpectedState) removePath(destination);
-    fs.renameSync(tempPath, destination);
+    renameSyncWithRetry(tempPath, destination);
   } catch (error) {
     removePath(tempPath);
     if (verifyExpectedState) {

@@ -355,7 +355,7 @@ result = subprocess.run(
 
 Write-to-temp-then-rename (`fs.rename`, `fs.renameSync`, `os.replace`) replaces the target atomically on POSIX. On Windows the replace fails with `EPERM` / `EACCES` / `EBUSY` (Python: `PermissionError`) whenever another process holds the target open, and antivirus or the search indexer briefly opens freshly written files. On the maintainer's Windows 11 machine this happened about once per 3000–6000 replaces, enough to fail the full test suite at random.
 
-**Rule**: For files that are replaced often (sequence sidecars, task state), retry those error codes on `win32` with a short backoff and keep failing fast elsewhere. Reference implementation: `renameReplacing()` in `packages/core/src/channel/internal/store/seq.ts` (10 retries, 10 ms × attempt, at most ~550 ms). Other replace sites have not been converted yet; see R13 in the fork task `windows-test-failures`.
+**Rule**: For atomic state writes and ablation publication, reuse CLI `renameSyncWithRetry()` (`utils/rename.ts`); Python `common/io.py` uses the same Windows-only bounded schedule. Core sidecars retain their asynchronous `renameReplacing()` implementation. All allow 10 retries, 10 ms × attempt, at most ~550 ms, and fail fast elsewhere. Preserve existing cleanup and conflict guards; see [Filesystem Safety](../cli/backend/filesystem-safety.md#windows-transient-rename-recovery-r13) for the executable contract and tests. `commands/update.ts` migration rename sites remain outside R13.
 
 ---
 

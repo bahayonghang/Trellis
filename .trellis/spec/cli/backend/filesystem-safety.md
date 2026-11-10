@@ -27,7 +27,7 @@ from `task.py list`).
 ```ts
 // packages/cli/src/utils/atomic-write.ts
 export function writeFileAtomic(filePath: string, data: string | Uint8Array): void
-// writes `<dir>/.<basename>.<pid>.tmp` then fs.renameSync over filePath;
+// writes `<dir>/.<basename>.<pid>.tmp` then renameSyncWithRetry over filePath;
 // removes the tmp and rethrows on failure. Same-dir tmp keeps rename atomic.
 ```
 
@@ -60,6 +60,50 @@ writeFileAtomic(hashesPath, JSON.stringify(payload, null, 2));
 > **Note**: atomic write fixes the *crash window*. It does **not** fix
 > concurrent last-writer-wins (multiple processes RMW the same file). File
 > locking / seq reconciliation is a separate, still-open concern.
+
+---
+
+### Windows transient rename recovery (R13)
+
+**Scope / trigger:** CLI atomic state writes and ablation staging/file/directory
+publication can encounter short-lived antivirus/indexer handles on Windows.
+
+**Signature:** `renameSyncWithRetry(from: string, to: string): void` in
+`packages/cli/src/utils/rename.ts`. Python keeps the existing
+`write_text_atomic(path: Path, text: str) -> bool` signature.
+
+**Contract:** one initial attempt plus at most 10 retries, waiting 10, 20, …,
+100 ms (550 ms total). The synchronous CLI helper uses `Atomics.wait`; Python
+uses `time.sleep`. Retry only the rename/replace, not the preceding write.
+Neither helper unlinks the destination or changes ownership/conflict checks.
+
+**Validation / error matrix:**
+
+| Condition | Behavior |
+| --- | --- |
+| First attempt succeeds | Return immediately, no wait |
+| Windows `EPERM` / `EACCES` / `EBUSY` | Retry within the budget |
+| Python Windows `PermissionError` | Same retry schedule |
+| Non-Windows or any other error | Fail immediately, no wait |
+| Budget exhausted | CLI rethrows the exact final error; Python returns `False` for `OSError` |
+| Python `BaseException`, including during sleep | Existing temp cleanup runs, then the same exception is re-raised |
+
+**Good / base / bad cases:** a briefly locked target recovers with its old data
+intact until publication; an uncontended rename never sleeps; persistent
+permission denial still fails after 11 attempts. Cleanup remains caller-owned
+and best-effort/existing recovery semantics must not be weakened.
+
+**Tests required:** injected filesystem errors in `test/utils/atomic-write.test.ts`
+and `test/utils/ablation-store.test.ts` pin all three codes, limits, fail-fast,
+original errors/data, temp cleanup and recoverable transactions. Direct success
+coverage is in `test/utils/rename.test.ts`; `test/scripts/io.integration.test.ts`
+executes Python text/JSON writers with patched platform and sleep, including
+interrupt cleanup. Do not replace these with Vitest retries or larger timeouts.
+
+**Wrong vs correct:** `fs.renameSync(tmp, target)` at these CLI publication sites
+fails on a transient lock; use `renameSyncWithRetry(tmp, target)` without changing
+the surrounding checks or cleanup. `commands/update.ts` migration rename sites
+remain outside R13; core's asynchronous sidecar helper remains independent.
 
 ---
 

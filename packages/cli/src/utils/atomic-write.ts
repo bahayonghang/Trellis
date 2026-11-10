@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { renameSyncWithRetry } from "./rename.js";
 
 /**
  * Write a file atomically: stream into a temp file in the same directory,
@@ -19,7 +20,7 @@ export function writeFileAtomic(
   const tmp = path.join(dir, `.${path.basename(filePath)}.${process.pid}.tmp`);
   try {
     fs.writeFileSync(tmp, data);
-    fs.renameSync(tmp, filePath);
+    renameSyncWithRetry(tmp, filePath);
   } catch (err) {
     try {
       fs.rmSync(tmp, { force: true });
