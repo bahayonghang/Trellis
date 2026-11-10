@@ -249,8 +249,19 @@ this Windows host and remains a CI follow-up. `.pi`, marketplace, local workflow
 CLI document stdin and other tasks remain untouched. The spec now explicitly
 requires wrapped-empty-object completion; doc debt: none.
 
-## Remaining main-session work
+## Main-session final gate
 
-Final staged GitNexus change detection (including new helper/tests), commit with
-`Ported from mindfold-ai/Trellis#591`, then normal archive. Neither agent staged,
-committed, archived, pushed, amended or spawned another implement/check agent.
+Final staged GitNexus detection included all new helper/assets/tests: 45 files,
+63 symbols, 43 expected hook/distribution flows, CRITICAL within the warned scope.
+Commit `9d0c72f7 fix(hooks): bound stdin intake across Python hook entrypoints`
+includes `Ported from mindfold-ai/Trellis#591`. The real pre-commit hook ran
+lint-staged and the complete core/CLI suites successfully. The working tree was
+clean after that commit. Normal scoped archive is separate bookkeeping.
+
+Fresh main LSP requests remained inconclusive (server startup/push-only coverage),
+not a clean-file claim; direct validators and the reviewed baseline comparison
+above supply the check evidence. Eight existing Snow Ruff findings were explicitly
+deferred for this session without suppressions; the reader's two AST advisories
+were reviewed as handled invalid-setting fallback and synchronized Queue/Event
+communication. No new blocking finding remains in this change. No push, amend,
+hook bypass or nested review-agent spawning.

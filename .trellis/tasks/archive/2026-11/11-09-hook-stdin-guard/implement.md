@@ -10,6 +10,8 @@
 - [x] Compile all tracked and newly added Python files with actual 3.9.25; check twin parity and changed-file diagnostics. Classify pre-existing findings without unrelated security-policy refactors.
 - [x] Update canonical spec contracts with `trellis-update-spec`; record exact red/green, process exit and artifact-distribution evidence in PRD.
 - [x] Independent full-scope review: fixed Snow's wrapped-empty-object completion, added failing-then-passing native regression, reran all five checks plus focused/distribution/compatibility probes. See `research/verification.md` → Independent check-agent review.
-- [ ] Main-session final staged GitNexus detection, then commit with `Ported from mindfold-ai/Trellis#591` and archive. No push/amend/hook bypass.
+- [x] Main-session final staged GitNexus detection: 45 files, 63 symbols, 43 expected hook/distribution flows, CRITICAL within the warned scope. Commit `9d0c72f7` includes `Ported from mindfold-ai/Trellis#591`; real pre-commit checks passed. No push/amend/hook bypass.
+
+Archive handoff: run normal `task.py archive` after this gated implementation commit; keep bookkeeping separate.
 
 Rollback point: before changing entrypoints, tests and new support asset are isolated. Roll back consumers and helper delivery together; never leave importing scripts without the installed support file.
