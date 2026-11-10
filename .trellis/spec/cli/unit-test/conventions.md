@@ -28,13 +28,16 @@
 
 `test/setup.ts` is registered via `setupFiles` in `vitest.config.ts` and
 unconditionally `delete`s a list of env vars before any test loads. The list is
-currently 10 entries in three groups, and each group exists for a *different*
+currently 13 entries in three groups, and each group exists for a *different*
 reason — which is what makes the "when to extend" rule easy to get wrong.
 
 **Group 1 — vars production resolvers honor as a user override.**
 
 ```ts
 delete process.env.TRELLIS_CONTEXT_ID;
+delete process.env.PI_SESSION_ID;
+delete process.env.PI_SESSIONID;
+delete process.env.PI_SUBAGENT_PARENT_SESSION;
 ```
 
 `TrellisContext.getContextKey` treats it as the highest-priority override —
@@ -43,6 +46,14 @@ OpenCode session it leaks in from the parent shell and hijacks the resolver,
 ignoring the test's mocked `platformInput`. Symptom: a test expecting
 `opencode_oc-a` receives `claude_<host-session-id>`, failing deterministically
 only on dev machines.
+
+Pi template tests copy `process.env` into a VM. Inherited `PI_SESSION_ID` /
+`PI_SESSIONID` override the no-session fallback, and
+`PI_SUBAGENT_PARENT_SESSION` leaks host parent routing into child fixtures.
+Scrub these in setup, not in Pi production code or the shell test command.
+`test/setup.test.ts` executes the real setup with VM host sentinels and asserts
+that each key is removed while unrelated environment survives. Existing Pi
+tests must still pass explicit per-test env overrides after setup.
 
 `OPENCODE_RUN_ID` used to sit in this group. The JS branch that read it was
 removed on 2026-08-06 (no OpenCode version sets the name), so it is no longer a
