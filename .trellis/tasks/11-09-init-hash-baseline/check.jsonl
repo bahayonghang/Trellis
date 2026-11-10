@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/cli/backend/migrations.md", "reason": "Preserve untouched baseline and deliberate untracked workflow state"}
+{"file": ".trellis/spec/cli/unit-test/conventions.md", "reason": "Regression red/green, no bypass flags or weak fixtures"}
+{"file": ".trellis/tasks/11-09-init-hash-baseline/research/upstream-653.md", "reason": "Verify selective port and update dry-run/application agreement"}
