@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/tech/repo/index.md", "reason": "仓库包结构、子模块与 pnpm workspace 布局"}
+{"file": ".trellis/spec/cli/unit-test/index.md", "reason": "测试运行方式与约定，用于记录基线"}

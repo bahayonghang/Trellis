@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/guides/cross-platform-thinking-guide.md", "reason": "换行、路径分隔符与解释器的跨平台规则"}
+{"file": ".trellis/spec/cli/unit-test/index.md", "reason": "测试约定与 pre-commit 行为"}
