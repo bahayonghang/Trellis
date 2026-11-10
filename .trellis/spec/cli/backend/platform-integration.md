@@ -2070,7 +2070,7 @@ The same rule applies to every other hook that's positioned as "repeated reminde
 
 ### CWD Robustness
 
-The hook uses `find_trellis_root()` to walk up from CWD until it finds `.trellis/`, so it works when the terminal is in a subdirectory (monorepo package, etc.) or when sub-agent spawn inherits a drifted CWD.
+The hook uses `find_trellis_root()` to walk up from CWD until it finds `.trellis/`, so it works when the terminal is in a subdirectory (monorepo package, etc.) or when sub-agent spawn inherits a drifted CWD. A `.trellis/` counts only when it contains `workflow.md`, `config.yaml`, or `scripts/`; any other `.trellis/` (for example a tool cache at `~/.trellis/`, which on Windows is an ancestor of `%TEMP%`) is skipped and the walk continues. Without that check the hook picked the home directory as the root and crashed on `import common`. The other hooks still use their own root finders; unifying them is tracked in task `hook-trellis-root`.
 
 ZCode hook commands must also make the script path itself CWD-robust. Use the ZCode project-root placeholder in `.zcode/config.json`, for example `{{PYTHON_CMD}} "${ZCODE_PROJECT_DIR}/.zcode/hooks/inject-workflow-state.py"`, rather than `{{PYTHON_CMD}} .zcode/hooks/inject-workflow-state.py`. The Python hook's `find_trellis_root()` only runs after Python opens the script; a cwd-relative command can fail before the hook starts if ZCode launches from a nested directory such as `.github/docs/...`.
 

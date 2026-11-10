@@ -84,11 +84,19 @@ def find_trellis_root(start: Path) -> Optional[Path]:
     """Walk up from start to find directory containing .trellis/.
 
     Handles CWD drift: subdirectory launches, monorepo packages, etc.
-    Returns None if no .trellis/ found (silent no-op).
+    A `.trellis/` without workflow.md, config.yaml or scripts/ is not a
+    Trellis project (e.g. a tool cache in the home directory, which on
+    Windows is an ancestor of %TEMP%); skip it and keep walking.
+    Returns None if no Trellis project is found (silent no-op).
     """
     cur = start.resolve()
     while cur != cur.parent:
-        if (cur / ".trellis").is_dir():
+        trellis_dir = cur / ".trellis"
+        if trellis_dir.is_dir() and (
+            (trellis_dir / "workflow.md").is_file()
+            or (trellis_dir / "config.yaml").is_file()
+            or (trellis_dir / "scripts").is_dir()
+        ):
             return cur
         cur = cur.parent
     return None
