@@ -43,7 +43,7 @@ Personal commits on `dev` at baseline time:
 | `7d2d8742` | chore: bump packageManager to pnpm 12.18.0 (also CI and publish workflows) |
 | `7edffcbb` | chore: add justfile for local checkout tasks |
 
-## Environment
+## Baseline Environment
 
 | Tool | Version |
 | --- | --- |
@@ -56,6 +56,33 @@ Personal commits on `dev` at baseline time:
 
 Global `trellis` / `tl` point at this checkout through `just install`
 (`just which` confirms; `trellis --version` prints 0.6.17).
+
+## Checkout Python Environment (2026-11-10)
+
+The historical baseline above used system Python 3.14.7. This checkout now has
+an explicit uv development environment, initialized with `uv init --bare
+--no-package --python 3.9` and pinned by `.python-version`:
+
+```bash
+uv sync --locked
+uv run python --version
+uv run pnpm test
+```
+
+- Verified with uv 0.13.7 and `.venv` CPython **3.9.25**, without changing the
+  system interpreter or global PATH. `uv sync` downloads Python when needed.
+- `requires-python = ">=3.9"` retains the runtime compatibility floor; the pin
+  selects 3.9 for local development. `uv.lock` is tracked, `.venv/` is ignored.
+- This is a non-packaged, standard-library-only Python environment. pnpm still
+  owns the TypeScript dependencies and basedpyright. See `CONTRIBUTING.md`.
+- Real Python 3.9 `py_compile` passed for all **73 tracked Python files**,
+  including the initialized marketplace submodule; bytecode went to a temp dir.
+- All five required checks passed under `uv run --locked`: lint, typecheck,
+  CLI `lint:py` (0 errors, 68 existing warnings), build, and full tests.
+  Tests: core **401 passed / 2 skipped**, CLI **1930 passed / 35 skipped**.
+  No added skips, timeouts, or retry settings.
+
+Earlier results below retain their original interpreter and test counts.
 
 ## Results
 

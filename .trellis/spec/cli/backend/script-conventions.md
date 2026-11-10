@@ -10,6 +10,21 @@ All workflow scripts target **Python 3.9+** for cross-platform compatibility (ma
 
 ---
 
+## Checkout Python Environment
+
+The root `pyproject.toml` is a non-packaged, standard-library-only development
+environment. `.python-version` pins Python 3.9; `requires-python = ">=3.9"`
+keeps the supported-runtime floor unchanged. Commit `uv.lock`, but never `.venv/`.
+Do not add Python build metadata or duplicate pnpm-managed basedpyright here.
+
+Run `uv sync --locked`, then use `uv run python ...`, `uv run pnpm test`, and
+`uv run git commit ...` to put the checkout interpreter on subprocess PATH.
+An unwrapped system `python` is not selected by `pyrightconfig.json` and need
+not match the pin. Check with `uv run python --version`; actual Python 3.9
+`py_compile` and runtime tests are separate from static version checking.
+This setup applies only to developing this checkout; generated user projects
+still require Python 3.9+ and do not require uv.
+
 ## Directory Structure
 
 ```

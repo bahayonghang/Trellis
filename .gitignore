@@ -162,7 +162,8 @@ opencode.json
 # iFlow local config (if it has local state files)
 .iflow/settings.local.json
 
-# Python cache
+# Local Python development environment and cache
+.venv/
 __pycache__/
 *.pyc
 .pytest_cache/
