@@ -115,12 +115,42 @@ commits. All are intermittent:
   test removed the temp dir. Fixed with `maxRetries` on that `rmSync`.
 - `packages/cli/test/commands/ablate.integration.test.ts` (#5) failed once
   with `EPERM` renaming a restore temp dir onto `.codex/hooks` in
-  `utils/ablation-store.ts`. Same cause as the `.seq` failure. **Not fixed
-  yet**: tracked as R13 in task `windows-test-failures`, together with the
-  other unconverted replace sites (`ablation-store.ts`, `atomic-write.ts`,
-  Python `common/io.py`).
+  `utils/ablation-store.ts`. Same cause as the `.seq` failure. **R13 code
+  fixed (2026-11-10), hook streak pending**: CLI `renameSyncWithRetry`
+  now covers all three ablation rename sites and `writeFileAtomic`;
+  Python `common/io.py` and its byte-identical dogfood twin retry
+  `PermissionError` on Windows. Each allows 10 retries at 10–100 ms
+  (550 ms total), with immediate failure elsewhere. `commands/update.ts`
+  migration rename sites remain outside this fix. The sibling sweep also
+  found the one-shot CLI `channel/store/paths.ts:migrateLegacyChannels`
+  rename; it retains the source and warns on failure, and is outside R13.
 
-Apart from R13, any failing test is a regression.
+R13 verification (2026-11-10):
+
+- Fault-injection red run before implementation: 25 failed / 42 passed.
+  Green focused run including ablate integration: 81 passed / 2 existing
+  skipped; 48 regression cases added, no new skips/timeouts/retries.
+- Independent check added three setup sentinel regressions: red 5 failed /
+  45 passed (three sentinels plus two existing Pi failures), green 50/50;
+  combined R13/Pi/setup focused run 131 passed / 2 existing skipped.
+- Full Windows suite via ordinary `pnpm test`, with Pi host env inherited:
+  core 401 passed / 2 skipped; CLI 1920 passed / 35 skipped. Lint,
+  TypeScript checks, Python checks (0 errors, 68 warnings in untouched
+  files), build, and all 28 Python twin byte comparisons passed.
+- Fixed the newly discovered Pi test isolation failure in `test/setup.ts`:
+  scrub host `PI_SESSION_ID`, `PI_SESSIONID`, and
+  `PI_SUBAGENT_PARENT_SESSION` before tests load. `evaluateExtension`
+  spreads host env into its VM, which otherwise overrides no-session and
+  no-parent fixtures. Tests may still supply explicit per-test env; Pi
+  product runtime is unchanged. `test/setup.test.ts` runs the real setup
+  against isolated host sentinels, preserving unrelated env. No shell env
+  workaround is required.
+- Both Python copies passed Python 3.9 grammar parsing. Runtime probes used
+  installed Python 3.14.7; a real Python 3.9 interpreter is not installed.
+- Three consecutive real hook commits remain for the main session; no
+  commit or archive was performed during implementation.
+
+Any failing test needs investigation; no known environment workaround is required.
 
 ## Known Issues
 

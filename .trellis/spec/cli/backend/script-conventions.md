@@ -404,7 +404,12 @@ The single source of truth for all JSON file operations. Replaces 8 duplicated `
   leaves the existing file intact instead of truncated. On failure the tmp
   file is unlinked; a `BaseException` (e.g. `KeyboardInterrupt`) is re-raised,
   while `OSError`/`IOError` from the write itself are caught and return
-  `False` as before. This matters for `task.json`: a truncated file reads
+  `False` as before. Only `os.replace` retries Windows (`sys.platform ==
+  "win32"`) `PermissionError`: 10 retries at 10, 20, …, 100 ms (550 ms total).
+  Other platforms/errors fail immediately; an interrupt during backoff still
+  cleans the temp and re-raises. Runtime fault-injection coverage is in
+  `test/scripts/io.integration.test.ts`; keep the dogfood twin byte-identical.
+  This matters for `task.json`: a truncated file reads
   back as `None` from `read_json`, which makes the task silently vanish from
   `task.py list`. See [Filesystem Safety](./filesystem-safety.md#1-atomic-writes--never-truncate-a-state-file-in-place).
 
