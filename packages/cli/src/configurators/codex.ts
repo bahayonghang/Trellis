@@ -170,12 +170,12 @@ export function collectCodexTemplates(): Map<string, string> {
   for (const agent of getAllAgents()) {
     files.set(`.codex/agents/${agent.name}.toml`, agent.content);
   }
-  for (const hook of getAllHooks()) {
-    files.set(`.codex/hooks/${hook.name}`, hook.content);
-  }
-  // Shared hooks (inject-workflow-state.py + native SubagentStart context).
+  // Install shared support assets before either shared or custom entrypoints.
   for (const [k, v] of collectSharedHooks(".codex/hooks", "codex")) {
     files.set(k, v);
+  }
+  for (const hook of getAllHooks()) {
+    files.set(`.codex/hooks/${hook.name}`, hook.content);
   }
   files.set(".codex/hooks.json", resolvePlaceholders(getHooksConfig()));
   const config = getConfigTemplate();

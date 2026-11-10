@@ -11,19 +11,9 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { collectPlatformTemplates } from "../../src/configurators/index.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const HOOK_SCRIPT = path.join(
-  path.dirname(__filename),
-  "..",
-  "..",
-  "src",
-  "templates",
-  "snow",
-  "hooks",
-  "write-trellis-context.py",
-);
+const HOOK_SCRIPT = ".snow/hooks/write-trellis-context.py";
 
 function resolvePython(): string | null {
   for (const candidate of ["python", "python3", process.env.PYTHON ?? ""]) {
@@ -47,6 +37,12 @@ interface HookResult {
 }
 
 function writeFixtureRepo(root: string): void {
+  for (const [name, content] of collectPlatformTemplates("snow") ?? []) {
+    if (!name.startsWith(".snow/hooks/")) continue;
+    const dest = path.join(root, name);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, content, "utf-8");
+  }
   const taskDir = path.join(root, ".trellis", "tasks", "demo-task");
   fs.mkdirSync(path.join(root, ".trellis", "scripts"), { recursive: true });
   fs.mkdirSync(taskDir, { recursive: true });
@@ -136,7 +132,7 @@ function runHook(
 
   const result = spawnSync(
     PYTHON,
-    ["-X", "utf8", HOOK_SCRIPT, mode],
+    ["-X", "utf8", path.join(repo, HOOK_SCRIPT), mode],
     {
       cwd: repo,
       env,
@@ -362,11 +358,14 @@ describe("snow write-trellis-context.py execution", () => {
 
   it.skipIf(!PYTHON)("enforces _truncate limits in UTF-8 bytes", () => {
     if (!PYTHON) return;
-    // Import helpers by executing a tiny driver against the hook module.
+    // Emulate Python's entrypoint directory when importing the installed hook.
+    const repo = makeRepo();
+    const script = path.join(repo, HOOK_SCRIPT).replace(/\\/g, "/");
     const driver = `
 import importlib.util, json, sys
 from pathlib import Path
-spec = importlib.util.spec_from_file_location("wtc", r"${HOOK_SCRIPT.replace(/\\/g, "/")}")
+sys.path.insert(0, str(Path(r"${script}").parent))
+spec = importlib.util.spec_from_file_location("wtc", r"${script}")
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 text = "中" * 200 + "a" * 200

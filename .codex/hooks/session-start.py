@@ -18,6 +18,9 @@ import warnings
 from io import StringIO
 from pathlib import Path
 
+# Installed beside this entrypoint by the shared hook collector.
+from trellis_hook_input import read_hook_json
+
 # Force UTF-8 on stdin/stdout/stderr on Windows. Default codepage there is
 # cp936 / cp1252 / etc. — non-ASCII content (Chinese task names, prd snippets)
 # both in stdin (hook payload from host CLI) and stdout (our emitted blocks)
@@ -476,15 +479,8 @@ def main() -> None:
     if should_skip_injection():
         sys.exit(0)
 
-    # Read hook input from stdin
-    try:
-        hook_input = json.loads(sys.stdin.read())
-        if not isinstance(hook_input, dict):
-            hook_input = {}
-        project_dir = Path(_normalize_windows_shell_path(hook_input.get("cwd", "."))).resolve()
-    except (json.JSONDecodeError, KeyError):
-        hook_input = {}
-        project_dir = Path(".").resolve()
+    hook_input = read_hook_json()
+    project_dir = Path(_normalize_windows_shell_path(hook_input.get("cwd", "."))).resolve()
 
     configure_project_encoding(project_dir)
 

@@ -17,6 +17,7 @@
  * trellis-research remains standalone (no implement/check-specific prelude).
  */
 
+import { getSharedHookSupportFiles } from "../shared-hooks/index.js";
 import {
   createTemplateReader,
   type AgentTemplate,
@@ -34,10 +35,16 @@ export function getAllAgents(): AgentTemplate[] {
 
 /** Inject + breadcrumb hooks (onSessionStart / onUserMessage / beforeSubAgentStart). */
 export function getAllHooks(): HookTemplate[] {
-  return listFiles("hooks").map((name) => ({
-    targetPath: name,
-    content: readTemplate(`hooks/${name}`),
-  }));
+  return [
+    ...getSharedHookSupportFiles().map(({ name, content }) => ({
+      targetPath: name,
+      content,
+    })),
+    ...listFiles("hooks").map((name) => ({
+      targetPath: name,
+      content: readTemplate(`hooks/${name}`),
+    })),
+  ];
 }
 
 /** Operator guide copied to `.snow/SNOW.md`. */

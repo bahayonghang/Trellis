@@ -24,6 +24,9 @@ from __future__ import annotations
 
 # IMPORTANT: Suppress all warnings FIRST
 import warnings
+
+from trellis_hook_input import read_hook_json
+
 warnings.filterwarnings("ignore")
 
 import json
@@ -1093,12 +1096,7 @@ def main():
     if os.environ.get("TRELLIS_HOOKS") == "0" or os.environ.get("TRELLIS_DISABLE_HOOKS") == "1":
         sys.exit(0)
 
-    try:
-        input_data = json.load(sys.stdin)
-    except json.JSONDecodeError:
-        sys.exit(0)
-    if not isinstance(input_data, dict):
-        sys.exit(0)
+    input_data = read_hook_json()
 
     if _hook_event_name(input_data) == "SubagentStart":
         try:

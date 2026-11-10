@@ -29,6 +29,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from trellis_hook_input import parse_hook_json, read_hook_stdin
+
 # Force UTF-8 on Windows consoles (cp936/cp1252 otherwise corrupt Chinese paths).
 if sys.platform.startswith("win"):
     import io as _io
@@ -166,66 +168,33 @@ def _parse_active_task_path(current_out: str, repo: Path) -> Path | None:
     return None
 
 
-def _drain_stdin(timeout_sec: float = 0.5) -> str:
-    """Best-effort drain of host-piped hook context without hanging on TTY."""
-    chunks: list[str] = []
-    try:
-        if sys.stdin is None or sys.stdin.closed:
-            return ""
-        # Interactive terminal: do not block waiting for EOF.
-        if hasattr(sys.stdin, "isatty") and sys.stdin.isatty():
-            return ""
-
-        # Hosts (Snow) pipe JSON then close stdin. Manual CLI runs must not hang.
-        if sys.platform.startswith("win"):
-            import threading
-
-            box: list[str] = []
-
-            def _read() -> None:
-                try:
-                    box.append(sys.stdin.read())
-                except Exception:
-                    pass
-
-            t = threading.Thread(target=_read, daemon=True)
-            t.start()
-            t.join(timeout_sec)
-            return box[0] if box else ""
-
-        import select
-
-        while True:
-            ready, _, _ = select.select([sys.stdin], [], [], timeout_sec)
-            if not ready:
-                break
-            chunk = sys.stdin.read(4096)
-            if not chunk:
-                break
-            chunks.append(chunk)
-    except Exception:
-        pass
-    return "".join(chunks)
+def _drain_stdin() -> str:
+    """Use the shared deadline while preserving Snow's wrapper-tolerant parser."""
+    return read_hook_stdin(is_complete=lambda raw: bool(_stdin_json_document(raw)))
 
 
-def _parse_stdin_json(raw: str) -> dict[str, Any]:
+def _stdin_json_document(raw: str) -> str:
+    """Return a complete JSON document, including a wrapped empty object."""
     text = (raw or "").strip()
-    if not text:
-        return {}
     try:
-        data = json.loads(text)
-        return data if isinstance(data, dict) else {}
-    except Exception:
-        # Some hosts may wrap payload; try first JSON object substring.
+        json.loads(text)
+    except (ValueError, RecursionError):
+        # Some hosts wrap payloads; retain the original first/last brace policy.
         start = text.find("{")
         end = text.rfind("}")
-        if start >= 0 and end > start:
-            try:
-                data = json.loads(text[start : end + 1])
-                return data if isinstance(data, dict) else {}
-            except Exception:
-                return {}
-        return {}
+        if start < 0 or end <= start:
+            return ""
+        text = text[start : end + 1]
+        try:
+            json.loads(text)
+        except (ValueError, RecursionError):
+            return ""
+    return text
+
+
+def _parse_stdin_json(raw: str, *, diagnose: bool = True) -> dict[str, Any]:
+    # Completion and final parsing must agree without testing dict truthiness.
+    return parse_hook_json(_stdin_json_document(raw) or raw, diagnose=diagnose)
 
 
 def _resolve_mode(

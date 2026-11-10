@@ -23,6 +23,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from trellis_hook_input import read_hook_json
+
 # Hook hosts send UTF-8 JSON regardless of the process locale.
 _stdin_reconfigure = getattr(sys.stdin, "reconfigure", None)
 if callable(_stdin_reconfigure):
@@ -253,12 +255,7 @@ def main() -> int:
     if os.environ.get("TRELLIS_HOOKS") == "0" or os.environ.get("TRELLIS_DISABLE_HOOKS") == "1":
         return 0
 
-    try:
-        hook_input = json.loads(sys.stdin.read())
-    except (json.JSONDecodeError, ValueError):
-        hook_input = {}
-    if not isinstance(hook_input, dict):
-        hook_input = {}
+    hook_input = read_hook_json()
 
     command, response = _pending_shell_command(hook_input)
     subcommands = _extract_task_subcommands(command)

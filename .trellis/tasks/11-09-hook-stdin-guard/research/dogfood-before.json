@@ -1,0 +1,11 @@
+{
+  ".claude\\hooks\\inject-subagent-context.py": "9b68be8d08f85e824e39d901a29f14d38346dbeeda15880e4cba03076f2a8caa",
+  ".claude\\hooks\\inject-workflow-state.py": "8a07476f74185ec75a478dd8a700667417f98994bee6c7b3ad6f7057a4c492cf",
+  ".claude\\hooks\\session-start.py": "59bf255306cd3c45cc2961f1aaa55faba43e240c1fa57b102ccb052d63dccb5c",
+  ".cursor\\hooks\\inject-shell-session-context.py": "45a8b060c68b04d2d92bf0b8d5626651f490bd05a314a6af52179515a07d8d06",
+  ".cursor\\hooks\\inject-subagent-context.py": "9b68be8d08f85e824e39d901a29f14d38346dbeeda15880e4cba03076f2a8caa",
+  ".cursor\\hooks\\session-start.py": "59bf255306cd3c45cc2961f1aaa55faba43e240c1fa57b102ccb052d63dccb5c",
+  ".codex\\hooks\\inject-subagent-context.py": "9b68be8d08f85e824e39d901a29f14d38346dbeeda15880e4cba03076f2a8caa",
+  ".codex\\hooks\\inject-workflow-state.py": "8a07476f74185ec75a478dd8a700667417f98994bee6c7b3ad6f7057a4c492cf",
+  ".codex\\hooks\\session-start.py": "efdd015c7c4687227ce34a84ac6249d5554c704f737e00d4844c9284ddcf696f"
+}

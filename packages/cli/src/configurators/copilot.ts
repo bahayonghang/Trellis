@@ -42,14 +42,13 @@ export function collectCopilotTemplates(): Map<string, string> {
   )) {
     files.set(filePath, content);
   }
-  // Copilot's own session-start hook
-  for (const hook of getAllHooks()) {
-    files.set(`.github/copilot/hooks/${hook.name}`, hook.content);
-  }
-  // Shared hooks (inject-workflow-state.py only). Copilot bundles its own
-  // session-start.py above; sub-agent context is pull-based (class-2).
+  // Shared support assets must precede Copilot's own SessionStart entrypoint.
+  // Sub-agent context remains pull-based (class-2).
   for (const [k, v] of collectSharedHooks(".github/copilot/hooks", "copilot")) {
     files.set(k, v);
+  }
+  for (const hook of getAllHooks()) {
+    files.set(`.github/copilot/hooks/${hook.name}`, hook.content);
   }
   // Agents: reuse Cursor content + prepend pull-based prelude, then
   // normalize Cursor's Claude-style tools frontmatter for Copilot.

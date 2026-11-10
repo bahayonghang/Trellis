@@ -7,6 +7,9 @@ from __future__ import annotations
 
 # IMPORTANT: Suppress all warnings FIRST
 import warnings
+
+from trellis_hook_input import read_hook_json
+
 warnings.filterwarnings("ignore")
 
 import json
@@ -825,12 +828,7 @@ def main():
     if should_skip_injection():
         sys.exit(0)
 
-    try:
-        hook_input = json.loads(sys.stdin.read())
-        if not isinstance(hook_input, dict):
-            hook_input = {}
-    except (json.JSONDecodeError, ValueError):
-        hook_input = {}
+    hook_input = read_hook_json()
 
     # Try platform-specific env vars, hook cwd, fallback to cwd
     project_dir_env_vars = [

@@ -1,0 +1,11 @@
+{
+  "command": "npm pack --dry-run --json",
+  "id": "@mindfoldhq/trellis@0.6.17",
+  "included_asset": {
+    "path": "dist/templates/shared-hooks/trellis_hook_input.py",
+    "size": 7053,
+    "mode": 420
+  },
+  "total_files": 834,
+  "note": "Summarized from the real npm dry-run manifest. npm emitted its pre-existing ignore-workspace-root-check config warning."
+}

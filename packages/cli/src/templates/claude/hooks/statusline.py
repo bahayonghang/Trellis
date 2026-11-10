@@ -22,6 +22,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+from trellis_hook_input import read_hook_json
+
 # Hook hosts send UTF-8 JSON regardless of the process locale.
 _stdin_reconfigure = getattr(sys.stdin, "reconfigure", None)
 if callable(_stdin_reconfigure):
@@ -251,11 +253,7 @@ def _terminal_width() -> int | None:
 
 
 def main() -> None:
-    # Read Claude Code session JSON from stdin
-    try:
-        cc_data = json.loads(sys.stdin.read())
-    except (json.JSONDecodeError, ValueError):
-        cc_data = {}
+    cc_data = read_hook_json()
 
     trellis_dir = _find_trellis_dir()
     SEP = " \033[90m·\033[0m "

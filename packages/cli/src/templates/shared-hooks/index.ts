@@ -24,6 +24,16 @@ export interface HookScript {
   content: string;
 }
 
+/** Runtime dependencies, not event entrypoints or platform capabilities. */
+const SHARED_HOOK_SUPPORT_FILES = ["trellis_hook_input.py"] as const;
+
+export function getSharedHookSupportFiles(): HookScript[] {
+  return SHARED_HOOK_SUPPORT_FILES.map((name) => ({
+    name,
+    content: readTemplate(name),
+  }));
+}
+
 export type SharedHookName =
   | "session-start.py"
   | "inject-shell-session-context.py"
@@ -155,7 +165,11 @@ export const SHARED_HOOKS_BY_PLATFORM: Record<
 export function getSharedHookScripts(): HookScript[] {
   const scripts: HookScript[] = [];
   const files = readdirSync(__dirname)
-    .filter((f) => f.endsWith(".py"))
+    .filter(
+      (f) =>
+        f.endsWith(".py") &&
+        !SHARED_HOOK_SUPPORT_FILES.some((name) => name === f),
+    )
     .sort();
 
   for (const file of files) {
@@ -166,13 +180,16 @@ export function getSharedHookScripts(): HookScript[] {
 }
 
 /**
- * Get the shared hook scripts that a given platform actually registers.
- * Drives `collectSharedHooks` so distribution never drifts from the
- * per-platform capability declared above.
+ * Get the platform's registered entrypoints with their support assets FIRST.
+ * Drives `collectSharedHooks` and ZCode's direct collector so init/update
+ * install dependencies before scripts, without registering them as events.
  */
 export function getSharedHookScriptsForPlatform(
   platform: SharedHookPlatform,
 ): HookScript[] {
   const allowed = new Set<string>(SHARED_HOOKS_BY_PLATFORM[platform]);
-  return getSharedHookScripts().filter((h) => allowed.has(h.name));
+  return [
+    ...getSharedHookSupportFiles(),
+    ...getSharedHookScripts().filter((h) => allowed.has(h.name)),
+  ];
 }

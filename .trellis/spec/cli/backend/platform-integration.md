@@ -794,6 +794,106 @@ foo: ["session-start.py", "inject-shell-session-context.py"],
 
 ---
 
+## Scenario: Bounded Python Hook Input and Support Assets
+
+### 1. Scope / Trigger
+
+All Python hook entrypoints must tolerate hosts that leave stdin open. The
+canonical runtime reader is `templates/shared-hooks/trellis_hook_input.py`,
+installed beside shared hooks, Codex/Copilot SessionStart, Claude's optional
+statusline, and Snow's context writer. It has no Trellis root/common dependency.
+Non-hook CLI document intake (`add_session.py`) is deliberately outside this contract.
+
+### 2. Signatures
+
+```python
+def read_hook_json() -> dict[str, Any]: ...
+def read_hook_stdin(*, is_complete: Callable[[str], bool] = _is_complete_json) -> str: ...
+def parse_hook_json(raw: str, *, diagnose: bool = True) -> dict[str, Any]: ...
+```
+
+```typescript
+getSharedHookScripts(): HookScript[]; // registered entrypoints only
+getSharedHookSupportFiles(): HookScript[]; // canonical runtime dependencies
+getSharedHookScriptsForPlatform(platform: SharedHookPlatform): HookScript[];
+// Last API returns support assets FIRST, then that platform's registered hooks.
+```
+
+### 3. Contracts
+
+- One total read deadline defaults to **2 seconds**. Optional
+  `TRELLIS_HOOK_STDIN_TIMEOUT_SECONDS` accepts finite seconds in **(0, 10]**;
+  absent/invalid settings use 2 seconds. No per-chunk deadline reset.
+- EOF returns immediately. A complete single JSON document can finish before
+  EOF; object validation rejects non-object payloads. UTF-8 is accumulated across
+  arbitrary byte boundaries; there is no new payload-size cap or prefix parse.
+- Pipe reads use a daemon, raw `os.read`, and a bounded read-ahead queue. Do not
+  use buffered stdin in that worker: shutdown can wait on its lock. Windows
+  additionally uses `PeekNamedPipe` before reading available bytes: a pending raw
+  read can stall later subprocesses inheriting the pipe, even with a duplicated
+  descriptor. POSIX may block the raw daemon. No POSIX-only `select` on Windows
+  pipes, and no `os._exit` workaround without demonstrated shutdown evidence.
+- Failures return `{}` / empty raw input without changing successful stdout.
+  `TRELLIS_HOOK_INPUT_DEBUG=1` enables category-only stderr diagnostics; default
+  paths remain silent and never log payloads.
+- Snow uses the same wrapper-tolerant document extractor for completion and
+  final parsing, preserving the first/last-brace recovery rule. Completion tests
+  the validated document, not dict truthiness: wrapped `{ }` must finish too.
+  Incremental parse attempts are silent; final validation reports diagnostics.
+- Support assets are **not events**: exclude them from `SharedHookName`,
+  `SHARED_HOOKS_BY_PLATFORM`, and `getSharedHookScripts`. The platform getter
+  prepends them so both `collectSharedHooks` and ZCode's direct consumer ship
+  them. Snow's independent `getAllHooks` prepends the same canonical bytes.
+- Platform maps must put the helper before **all** importers, including
+  Codex/Copilot custom SessionStart and optional Claude statusline. Init/update
+  hash ownership, uninstall and ablation still use the existing map pipeline;
+  no parallel installer. Pi receives no Python hooks.
+- Source type resolution uses `pyrightconfig.json.extraPaths` pointing at
+  `packages/cli/src/templates/shared-hooks`; installed hooks import their sibling.
+  Source-import probes must emulate the entrypoint directory on `sys.path` and
+  materialize the support asset, not add import suppressions/fallback readers.
+
+### 4. Validation & Error Matrix
+
+| Input / setting | Fail-soft behavior / debug category |
+| --- | --- |
+| Held-open empty/incomplete stream reaches deadline | empty result; `timeout` |
+| EOF with no non-whitespace content / interactive terminal | empty result; `empty` |
+| Malformed JSON at EOF | `{}`; `invalid-json` |
+| Complete non-object JSON | `{}`; `non-object` |
+| Pipe/decoder failure, including truncated UTF-8 | empty result; `read-error` |
+| Non-finite, non-positive, >10-second or nonnumeric override | use 2 seconds; `invalid-timeout` |
+| Object arrives after 0.5 seconds, or multi-megabyte Unicode object | preserve full input and normal output |
+
+### 5. Good / Base / Bad Cases
+
+Good: the host writes a complete object and keeps stdin open; context is emitted
+and native Python 3.9 exits. Base: a normal closed pipe keeps the prior protocol
+output. Bad: copying only an importing entrypoint, registering the helper as an
+event, or hiding a blocked read behind a tiny 0.2-second fixed timeout.
+
+### 6. Tests Required
+
+`test/scripts/hook-stdin.integration.test.ts` exercises all eight real installed
+entrypoints: held-open pipes, delayed valid input, closed/open stdout parity,
+empty/bad/non-object diagnostics, huge input and Snow wrapping. Its registry-wide
+asset test verifies canonical sibling bytes and map order, including ZCode,
+Snow and optional statusline. `hook-input-reader.integration.test.ts` verifies
+native exit, default/invalid deadlines, Unicode digest integrity, EOF immediacy,
+read errors and post-read inherited-stdin subprocess startup. Keep registry-wide
+configure/collect parity, init/update hash tracking and uninstall tests passing.
+Never hide failures with test retries/skips or a larger deadline budget.
+
+### 7. Wrong vs Correct
+
+Wrong: `json.loads(sys.stdin.read())`, or a worker holding `sys.stdin.buffer.read()`
+until EOF, or a fixed-size prefix treated as a complete JSON payload.
+
+Correct: `from trellis_hook_input import read_hook_json`, then
+`hook_input = read_hook_json()`, with the canonical sibling installed first.
+
+---
+
 ## Scenario: Extension-Backed Platform Support
 
 ### 1. Scope / Trigger
