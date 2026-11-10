@@ -171,5 +171,29 @@ export async function writeSidecar(
   await fsp.mkdir(path.dirname(sidecarPath), { recursive: true });
   const tmp = `${sidecarPath}.tmp.${process.pid}.${Date.now()}`;
   await fsp.writeFile(tmp, `${seq}\n`, "utf-8");
-  await fsp.rename(tmp, sidecarPath);
+  await renameReplacing(tmp, sidecarPath);
+}
+
+// On Windows, replacing a file that another process (antivirus, search
+// indexer) briefly holds open fails with EPERM/EACCES/EBUSY. Measured on a
+// Windows 11 dev machine: about 1 in 3000-6000 replaces. The handle closes
+// within milliseconds, so retry with a short backoff (at most ~550 ms).
+const RENAME_RETRY_CODES = new Set(["EPERM", "EACCES", "EBUSY"]);
+const RENAME_MAX_RETRIES = 10;
+
+async function renameReplacing(from: string, to: string): Promise<void> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await fsp.rename(from, to);
+      return;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      const transient =
+        process.platform === "win32" &&
+        code !== undefined &&
+        RENAME_RETRY_CODES.has(code);
+      if (!transient || attempt >= RENAME_MAX_RETRIES) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 10 * (attempt + 1)));
+    }
+  }
 }
