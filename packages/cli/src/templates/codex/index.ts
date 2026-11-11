@@ -20,6 +20,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getSharedHookSupportFiles } from "../shared-hooks/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -83,7 +84,65 @@ export function getAllHooks(): HookTemplate[] {
 }
 
 export function getHooksConfig(): string {
-  return readTemplate("hooks.json");
+  const config = JSON.parse(readTemplate("hooks.json")) as {
+    hooks: Record<string, { hooks: { command: string }[] }[]>;
+  };
+  for (const handlers of Object.values(config.hooks)) {
+    for (const handler of handlers) {
+      for (const hook of handler.hooks) {
+        const script = CODEX_HOOK_SCRIPTS.find(
+          (name) => hook.command === `{{PYTHON_CMD}} -X utf8 ${name}`,
+        );
+        if (script) hook.command = buildCodexHookCommand(script);
+      }
+    }
+  }
+  return JSON.stringify(config, null, 2) + "\n";
+}
+
+export const CODEX_HOOK_SCRIPTS = [
+  ".codex/hooks/inject-workflow-state.py",
+  ".codex/hooks/inject-subagent-context.py",
+] as const;
+
+/** Fixed source only; stdin and cwd remain owned by the original hook. */
+export function getCodexHookBootstrapSource(): string {
+  const canonical = getSharedHookSupportFiles().find(
+    (file) => file.name === "trellis_hook_paths.py",
+  );
+  if (!canonical) throw new Error("Missing canonical hook workspace discovery");
+  return (
+    canonical.content +
+    `
+import runpy
+import sys
+
+_scripts = (
+    ".codex/hooks/inject-workflow-state.py",
+    ".codex/hooks/inject-subagent-context.py",
+)
+if len(sys.argv) == 2 and sys.argv[1] in _scripts:
+    _root = find_trellis_root(Path.cwd())
+    if _root is not None:
+        _target = _root / sys.argv[1]
+        if _target.is_file() and all(
+            (_target.parent / name).is_file()
+            for name in ("trellis_hook_input.py", "trellis_hook_paths.py")
+        ):
+            sys.path.insert(0, str(_target.parent))
+            sys.argv = [str(_target)]
+            runpy.run_path(str(_target), run_name="__main__")
+`
+  );
+}
+
+export function buildCodexHookCommand(
+  script: (typeof CODEX_HOOK_SCRIPTS)[number],
+): string {
+  const encoded = Buffer.from(getCodexHookBootstrapSource(), "utf-8").toString(
+    "base64",
+  );
+  return `{{PYTHON_CMD}} -X utf8 -c "import base64;exec(base64.b64decode('${encoded}'))" ${script}`;
 }
 
 export function getConfigTemplate(): ConfigTemplate {

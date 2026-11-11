@@ -1,6 +1,8 @@
 # 设计提案：便携 Codex hook bootstrap
 
-**状态：等待用户审批，不是已选定实现。** 任务仍 planning；未运行真实 Codex 会话。
+**状态：用户已批准方案 A 与旧默认 hooks.json 镜像同步。** 用户另行接受
+getHooksConfig 的 HIGH 影响范围（17 个上游节点），允许按既定方案继续。
+未完成真实 Codex 0.167.0 宿主验收。
 
 ## 根因与约束
 
@@ -46,6 +48,10 @@ Codex 的 session cwd
 
 预计涉及约 12 个源/测试/镜像/规范文件，**超过 8 个**：Codex 模板 index/hooks.json、Codex configurator、update 接入、模板/平台/update 测试、新 launcher 进程测试、卸载测试、dogfood hooks.json、平台与更新规范。不是通用平台启动器重构。
 
+另需在 `init.ts` 接入一处窄收据保护：仅本次选择 Codex、已有 hooks.json
+收据且该文件未被写入时保留原项。不为用户未跟踪配置创建归属，不保留未选择
+平台的项，不修改全局 initializeHashes 或其它 force reinit 策略。
+
 ## 只迁移 Trellis 自有命令
 
 - 设计一个无副作用的 Codex JSON 升级计划器，仅处理 `.codex/hooks.json`。
@@ -58,12 +64,12 @@ Codex 的 session cwd
 
 ## 验证与授权关卡
 
-1. **设计审批后，先另行申请真实宿主/额度授权。** 在临时 init 项目中经普通 hook trust 路径，在 0.167.0 根目录/子目录做实际 RED；不使用危险 bypass。没有额度授权就停在这里，不把 shell 探针冒充宿主复现，也不将现有三份差异副本视为已同步的新脚本。
+1. **按本轮用户指示，先完成代码与自动化测试。** 先做实际生成命令的持久离线 RED，再实现方案 A。本轮命令行实测为 0.167.1，历史 0.167.0 证据仍保留；不得替代指定的 0.167.0 真实宿主验收。环境做不到时，代码和自动化测试完成后停止、不归档，不操作信任记录。
 2. 产品修改前加入持久离线 RED。使用实际生成命令和相同 cwd/input/执行 shell，覆盖两个事件、根/子目录、嵌套 Git/worktree、无 Git、近根隔离、中文空格、缺 helper/入口、空/坏/延迟/未关闭 stdin。
 3. 固定代码解码与规范根源码逐字节一致；参数白名单、命令长度低于 Windows cmd 限制、无绝对路径/假环境变量、无 stdin 预读。
 4. Windows 必测 Codex 等价 cmd raw_arg 与 PowerShell；显式 Git Bash 只作为 shell 检查，native POSIX 由 CI验证。
 5. 用真实 init → 用户自定义 hooks → update dry-run/写入 → 再次 no-op → uninstall dry-run/安全拒绝验证命令迁移、收据及归属。损坏/不确定配置不能被静默覆盖。
-6. 所有必需质量门和独立 review 通过后，再另行申请真实 GREEN 的会话次数/模型/提示词/停止条件。验收包含四种路径及实际任务上下文；原生 SubagentStart 的额外消耗也须明确。
+6. 质量门和独立 review 通过后，单列真实宿主四种路径及实际任务上下文验收。指定版本或正常信任不可用时，按用户指示停止，不把探针或回放写成通过。
 
 ## 风险与回滚
 

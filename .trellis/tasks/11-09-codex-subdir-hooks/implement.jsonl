@@ -1,0 +1,7 @@
+{"file":".trellis/spec/cli/backend/platform-integration.md","reason":"Codex hooks, rendering and ownership"}
+{"file":".trellis/spec/cli/backend/commands-update.md","reason":"Plan/apply, skip, dry-run, receipt contracts"}
+{"file":".trellis/spec/cli/backend/configurator-shared.md","reason":"Shared rendering and Python command resolution"}
+{"file":".trellis/spec/cli/backend/filesystem-safety.md","reason":"Preserve user config and protected mirrors"}
+{"file":".trellis/spec/cli/backend/script-conventions.md","reason":"Python3.9 and hook boundaries"}
+{"file":".trellis/spec/cli/unit-test/integration-patterns.md","reason":"Real init/update and regression isolation"}
+{"file":".trellis/spec/cli/backend/uninstall-scrubbers.md","reason":"Readable final script token ownership"}

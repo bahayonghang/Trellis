@@ -418,3 +418,15 @@ What you should test when extending update:
 | Block-merge change to `workflow.md` / `AGENTS.md` | At least one test asserting both "user prose preserved" and "managed block updated" |
 
 When a test reaches into `getAllMigrations()` or `getMigrationsForVersion`, it's exercising the boundary with `migrations/index.ts` — keep those assertions narrow (e.g., "this manifest's safe-file-delete fires") so they don't break every time the manifest list grows.
+
+## Codex command-only hook migration
+
+After normal template skip filtering, `analyzeChanges` delegates only
+`.codex/hooks.json` to `planCodexHooksUpgrade`. A proven command-only result is
+an auto-update with normal backup and receipt refresh. User-only/deleted/current
+custom content is left out of template hash-repair buckets; it is not a pristine
+template merely because the narrow plan has no action. Manual files are shown
+for review, but force skips them and create-new writes only a generated candidate.
+Manual originals and receipts remain unchanged. Other paths retain the normal
+classification. See [portable Codex contract](./platform-integration.md#scenario-portable-codex-hook-commands-667)
+for signatures, override aliases, error matrix and required tests.

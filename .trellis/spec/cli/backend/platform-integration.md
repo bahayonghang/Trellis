@@ -2530,3 +2530,84 @@ Note this is *only* about `{{…}}` placeholders. The separate `python3` → `py
 | #71                           | Qoder            | Skills (like Codex/Kiro)                       | Skills with YAML frontmatter; Trae was dropped (IDE-only, no deterministic invocation trigger) |
 | feat/v0.5.0-beta              | All platforms (13 at the time; 21 today) | Unified template architecture | Common templates + shared hooks + `createTemplateReader()` factory                    |
 | `04-21-bootstrap-onboard-gap` | n/a              | Three-branch init dispatch + joiner onboarding | `.developer` file as per-checkout signal; documents the `handleReinit` two-point wiring        |
+
+## Scenario: Portable Codex hook commands (#667)
+
+### 1. Scope / Trigger
+
+Codex starts project hook commands in the session/turn cwd. Relative script
+entries fail before Python can discover a workspace. Only UserPromptSubmit and
+SubagentStart use this Codex bootstrap; no other platform/event is added.
+
+### 2. Signatures
+
+- `templates/codex:getCodexHookBootstrapSource(): string`
+- `templates/codex:buildCodexHookCommand(script: typeof CODEX_HOOK_SCRIPTS[number]): string`
+- `configurators/codex:planCodexHooksUpgrade(existingContent, desiredContent): CodexHooksUpgradePlan`
+- Plan kind is `unchanged`, `migrate`, or `manual`; manual retains the original
+  content and supplies a reason. The planner has no filesystem or trust writes.
+
+### 3. Contracts
+
+The encoded Python source starts with the exact canonical
+`shared-hooks/trellis_hook_paths.py` bytes, followed by fixed dispatch code.
+Only `.codex/hooks/inject-workflow-state.py` and
+`.codex/hooks/inject-subagent-context.py` may execute. The same process adds the
+selected hook directory to its import path and runs the entry as `__main__`.
+No stdin reads, cwd changes, project-root environment variables or dependencies
+are added. Partial nearest workspaces never borrow an outer hook or helper.
+
+The command is `{{PYTHON_CMD}} -X utf8 -c "<constant decoder>" <readable script>`.
+Base64 provides consistent shell quoting; it executes only versioned source.
+The final script token preserves the existing uninstall ownership contract.
+Command length must stay below cmd's 8191-character limit. Normal Codex trust
+review is still required when commands change; automation does not grant trust.
+
+### 4. Validation & Error Matrix
+
+| Input | Result |
+| --- | --- |
+| Exact old python/python3/py -3 Trellis command under its known event | Replace only that command token; preserve every other byte/field/order. |
+| User command, removed handler/event or already-current command | Keep unchanged, without adding defaults or blessing user content in hash repairs. |
+| Invalid JSON, uncertain shape, ambiguous command token | Manual; original file and update receipt remain unchanged even with force. |
+| Trellis entry with `commandWindows` or `command_windows` | Manual; both are real 0.167.0 Windows override fields. |
+| Manual plan with explicit create-new | Write a generated `.new` candidate only; never overwrite the original or its receipt. |
+| update.skip / dry-run | Skip before project-config reads / write no project bytes. |
+| Missing nearest entry or runtime helper / unsupported script argument | Silent exit; do not search an outer workspace. |
+
+### 5. Good / Base / Bad Cases
+
+Base: root and subdirectory commands inject the same task breadcrumb/PRD.
+Good: Chinese/space paths, non-Git projects and nested real worktrees resolve
+their nearest valid workspace. Bad: force-overwriting a damaged or custom
+hooks.json would discard user configuration; manual review keeps it intact.
+
+### 6. Tests Required
+
+`codex-hook-launcher.integration.test.ts` executes actual generated commands with
+the 0.167.0 raw cmd /C convention and pwsh on Windows, native sh on POSIX. Assert
+actual additionalContext, canonical decode equality, Python 3.9 compilation,
+argument whitelist, partial-root isolation and bounded/unchanged stdin behavior.
+Git Bash is not native Linux evidence. Pure and init/update tests cover exact
+command-token edits, overrides, deletion, custom bytes, dry-run, skip, backup,
+receipt and no-op behavior. Existing uninstall scrubbers must retain user hooks.
+These are shell/automation results, never proof of a real Codex host session.
+
+### 7. Wrong vs Correct
+
+Wrong: overwrite hooks.json from the default template on update or force reinit.
+Correct: apply the narrow proven command plan and retain manual/custom entries;
+emit only the original two events when creating a new configuration.
+
+During init, write a migrated hooks plan through the existing `writeFile`
+conflict/recording path without sending its user bytes through template
+rendering again. A Windows `python3` replacement must change only the proven
+owned command, never a custom hook command or unknown JSON string. Fresh
+defaults still use the normal template map. Force/skip reinit tests assert the
+exact migrated/original CRLF bytes and the corresponding preserved/new receipt.
+
+Init's actual-write receipt capture has one Codex-specific protection: when
+this invocation selected Codex and did not write hooks.json, preserve its
+preexisting hooks hash after `initializeHashes`. Never create a missing claim,
+preserve an unselected platform, or restore the old hash after a safe migration
+actually wrote the file. This is local init wiring, not a global hash API mode.

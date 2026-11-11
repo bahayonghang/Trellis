@@ -25,12 +25,15 @@
 ## Acceptance Criteria
 
 - [ ] 从仓库根目录、`packages/cli/src`、嵌套 worktree、含中文和空格的路径启动 Codex，hook 都能启动，并注入正确任务的上下文（真实宿主冒烟测试，Windows 必测）。
-- [ ] 生成的 `.codex/hooks.json` 不含本机绝对路径。
-- [ ] 已有项目执行 `trellis update` 后能迁移到新的 hook 命令，且不覆盖用户自定义的 hooks 条目。
+- [x] 生成的 `.codex/hooks.json` 不含本机绝对路径。
+- [x] 已有项目执行 `trellis update` 后能迁移到新的 hook 命令，且不覆盖用户自定义的 hooks 条目（离线集成与构建后 CLI 验证，未冒充宿主验收）。
 
 ## 规划与审批状态
 
-`design.md` 为便携 Python 常量 bootstrap 的推荐提案；`implement.md` 列明先真实 RED、再改代码及后续 GREEN 的独立授权关卡。任务保持 planning，未运行 task.py start、未修改产品启动配置、未消费会话额度。等待用户批准启动方案，真实宿主授权另问。
+用户已批准方案 A、旧默认渲染镜像同步，并接受 getHooksConfig 的 HIGH
+影响范围。本轮先完成代码与离线测试；实际命令行现为 0.167.1，指定
+0.167.0 的真实宿主验收仍未完成。环境做不到时，自动化完成后停止、
+不归档，不把回放写成宿主验收。
 
 ## Dependencies
 

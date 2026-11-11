@@ -477,8 +477,13 @@ describe("configurePlatform", () => {
     const content = fs.readFileSync(hooksPath, "utf-8");
     const expectedPythonCmd =
       process.platform === "win32" ? "python" : "python3";
-    expect(content).toContain(
-      `"command": "${expectedPythonCmd} -X utf8 .codex/hooks/inject-workflow-state.py"`,
+    const parsed = JSON.parse(content) as {
+      hooks: { UserPromptSubmit: { hooks: { command: string }[] }[] };
+    };
+    const command = parsed.hooks.UserPromptSubmit[0].hooks[0].command;
+    expect(command.startsWith(`${expectedPythonCmd} -X utf8 -c `)).toBe(true);
+    expect(command.endsWith(" .codex/hooks/inject-workflow-state.py")).toBe(
+      true,
     );
     expect(content).not.toContain("{{PYTHON_CMD}}");
   });
@@ -1671,9 +1676,7 @@ describe("configurePlatform", () => {
 
   it("codex hooks.json template keeps PYTHON_CMD placeholder", () => {
     const rawTemplate = getCodexHooksConfig();
-    expect(rawTemplate).toContain(
-      "{{PYTHON_CMD}} -X utf8 .codex/hooks/inject-workflow-state.py",
-    );
+    expect(rawTemplate).toContain("{{PYTHON_CMD}} -X utf8 -c ");
   });
 
   it("cursor hooks.json matches both documented and native subagent tool names", () => {

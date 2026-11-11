@@ -7,7 +7,7 @@ import {
   getConfigTemplate,
   getHooksConfig,
 } from "../templates/codex/index.js";
-import { ensureDir } from "../utils/file-writer.js";
+import { ensureDir, writeFile } from "../utils/file-writer.js";
 import {
   resolvePlaceholders,
   resolveAllAsSkillsNeutral,
@@ -17,6 +17,104 @@ import {
   renderTemplateMap,
   writeTemplateMap,
 } from "./shared.js";
+
+export const CODEX_HOOKS_PATH = ".codex/hooks.json";
+
+export type CodexHooksUpgradePlan =
+  | { kind: "unchanged" | "migrate"; content: string }
+  | { kind: "manual"; content: string; reason: string };
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/** Only exact historic Trellis commands are owned; every other field survives. */
+export function planCodexHooksUpgrade(
+  existingContent: string,
+  desiredContent: string,
+): CodexHooksUpgradePlan {
+  const manual = (reason: string): CodexHooksUpgradePlan => ({
+    kind: "manual",
+    content: existingContent,
+    reason,
+  });
+  let existing: unknown;
+  try {
+    existing = JSON.parse(existingContent);
+  } catch {
+    return manual("invalid JSON");
+  }
+  if (!isObject(existing)) return manual("expected a JSON object");
+  if (existing.hooks === undefined)
+    return { kind: "unchanged", content: existingContent };
+  if (!isObject(existing.hooks)) return manual("unexpected hooks shape");
+  const desired = JSON.parse(desiredContent) as {
+    hooks: Record<string, { hooks: { command: string }[] }[]>;
+  };
+  const scripts: Record<string, string> = {
+    UserPromptSubmit: ".codex/hooks/inject-workflow-state.py",
+    SubagentStart: ".codex/hooks/inject-subagent-context.py",
+  };
+  const replacements = new Map<
+    string,
+    { command: string; expected: number; found: number }
+  >();
+  for (const [event, script] of Object.entries(scripts)) {
+    const handlers = existing.hooks[event];
+    if (handlers === undefined) continue; // A user may deliberately remove an event.
+    if (!Array.isArray(handlers)) return manual(`unexpected ${event} handlers`);
+    const legacy = new Set(
+      ["python", "python3", "py -3"].map(
+        (python) => `${python} -X utf8 ${script}`,
+      ),
+    );
+    for (const handler of handlers) {
+      if (!isObject(handler) || !Array.isArray(handler.hooks)) {
+        return manual(`unexpected ${event} handler`);
+      }
+      for (const entry of handler.hooks) {
+        if (!isObject(entry)) return manual(`unexpected ${event} hook`);
+        if (entry.type !== "command" || typeof entry.command !== "string")
+          continue;
+        if (!legacy.has(entry.command)) continue;
+        if ("commandWindows" in entry || "command_windows" in entry)
+          return manual("Trellis command has a Windows override");
+        const previous = replacements.get(entry.command);
+        replacements.set(entry.command, {
+          command: desired.hooks[event][0].hooks[0].command,
+          expected: (previous?.expected ?? 0) + 1,
+          found: 0,
+        });
+      }
+    }
+  }
+  if (replacements.size === 0)
+    return { kind: "unchanged", content: existingContent };
+  // Restrict the text edit to unambiguous command tokens. Do not reserialize
+  // unrelated fields (including numbers whose source precision JSON.parse loses).
+  for (const match of existingContent.matchAll(/("(?:[^"\\]|\\.)*")\s*:/g)) {
+    if (JSON.parse(match[1]) === "command" && match[1] !== '"command"') {
+      return manual("escaped command key requires manual review");
+    }
+  }
+  const content = existingContent.replace(
+    /"command"\s*:\s*("(?:[^"\\]|\\.)*")/g,
+    (match: string, value: string) => {
+      const replacement = replacements.get(JSON.parse(value) as string);
+      if (!replacement) return match;
+      replacement.found++;
+      return (
+        match.slice(0, -value.length) + JSON.stringify(replacement.command)
+      );
+    },
+  );
+  if (
+    [...replacements.values()].some((value) => value.found !== value.expected)
+  ) {
+    return manual("ambiguous Trellis command occurrence");
+  }
+  return { kind: "migrate", content };
+}
 
 /**
  * User-set `model` / `model_reasoning_effort` top-level keys on a generated
@@ -196,7 +294,34 @@ export async function configureCodex(cwd: string): Promise<void> {
   // which is a no-op (replacePythonCommandLiterals is idempotent).
   const files = renderTemplateMap(collectCodexTemplates());
   preserveCodexAgentModelKeys(cwd, files);
+  const hookPath = path.join(cwd, CODEX_HOOKS_PATH);
+  let migratedHooksContent: string | undefined;
+  const hookStat = fs.lstatSync(hookPath, { throwIfNoEntry: false });
+  if (hookStat) {
+    if (hookStat.isSymbolicLink() || !hookStat.isFile()) {
+      console.warn(
+        `Kept ${CODEX_HOOKS_PATH}: linked or nonregular configuration requires manual review.`,
+      );
+      files.delete(CODEX_HOOKS_PATH);
+    } else {
+      const plan = planCodexHooksUpgrade(
+        fs.readFileSync(hookPath, "utf-8"),
+        files.get(CODEX_HOOKS_PATH) ?? "",
+      );
+      files.delete(CODEX_HOOKS_PATH);
+      if (plan.kind === "migrate") migratedHooksContent = plan.content;
+      if (plan.kind === "manual")
+        console.warn(
+          `Kept ${CODEX_HOOKS_PATH}: ${plan.reason}; manual review required.`,
+        );
+    }
+  }
   await writeTemplateMap(cwd, files);
+  // The safe plan already contains rendered commands and exact user bytes.
+  // Re-rendering it would rewrite user-owned python3 literals on Windows.
+  if (migratedHooksContent !== undefined) {
+    await writeFile(hookPath, migratedHooksContent);
+  }
 
   // RESIDUAL — not expressible as a path→content pair: a directory with no
   // files in it. Trellis ships no Codex-specific skills (the workflow skills

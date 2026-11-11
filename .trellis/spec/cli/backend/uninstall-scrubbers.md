@@ -330,7 +330,11 @@ Related specs:
 
 ## Potential TODOs surfaced while reading
 
-- `commandMatchesDeletedPath` assumes the Trellis-emitted command has the exact shape `<python-cmd> <script-path>`. If we ever add launcher flags or wrappers, the helper needs a richer parser (full token scan, possibly drop known shell prefixes like `env VAR=val`).
+- Codex's constant bootstrap includes decoder flags but retains the readable
+  owned script as its final token. `commandMatchesDeletedPath` therefore needs
+  no parser change for this launcher. `codex-hooks-upgrade.test.ts` verifies
+  that migrated Trellis entries are removed while user hooks remain. Future
+  wrappers that move or hide the final token must revisit this contract.
 - The Pi exact-string constants (`PI_TRELLIS_EXTENSION`, `PI_TRELLIS_SKILLS`, `PI_TRELLIS_PROMPTS`) duplicate values that live in the Pi configurator. A shared module exporting these would prevent drift; today they are independently hard-coded in two places.
 - `scrubCodexConfigToml` derives current comment markers from the shipped template and keeps an explicit legacy allowlist. Other exact assignments such as `[agents].max_depth = 1` still require lockstep regression coverage when template behavior changes.
 - Codex comments now have a legacy-marker compatibility layer. Other platform constants still need an "old OR new" branch and deprecation window when their first emission change lands.
