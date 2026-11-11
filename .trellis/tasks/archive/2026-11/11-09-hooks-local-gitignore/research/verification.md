@@ -27,7 +27,7 @@ task, unrelated ignore pattern or whole linked-workflow policy is changed.
 - Independent check: no code blockers. Corrected one prose stage count; 17/17
   focused tests, lint, typecheck, strict TypeScript including both new test files
   (zero diagnostics), Prettier and diff checks passed independently.
-- Full pre-commit: pending implementation commit.
+- Full pre-commit PASS for 18a1614c: core 401 passed / 2 existing skips; CLI 2074 passed / 35 existing skips. Aggregate staged detection reported CRITICAL (four expected symbols, 17 flows); user explicitly accepted the scope and permitted continuation before archive.
 
 Assertions include actual Git check-ignore behavior, repeated init/update bytes,
 BOM/CRLF/comments and later negations, force-reinit preservation, tracked advice
