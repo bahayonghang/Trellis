@@ -170,3 +170,39 @@ Resumed the supplied handoff, prepared the complete source-delivery inventory an
 ### Next Steps
 
 - Await the separate publishing answer before any remote write; if approved, push only dev, create/reuse a fork-local draft PR, and record actual PR-triggered matrix SHAs, jobs and suites before sequential child/parent acceptance.
+
+
+## Session 5: Hosted reliability CI checkout diagnosis
+<!-- trellis-session: v=2 fp=9e2c6490aeb85d86 -->
+
+**Date**: 2026-11-11
+**Task**: Hosted reliability CI checkout diagnosis
+**Package**: cli
+**Branch**: `dev`
+
+### Summary
+
+Published authorized Trellis dev and opened fork-local draft PR1. All four hosted jobs failed at checkout because the marketplace gitlink points to a local-only commit. Prepared the exact additional-fork repair and requested expanded authorization.
+
+### Main Changes
+
+- Normally pushed only Trellis dev at9b8df9a6 and created https://github.com/bahayonghang/Trellis/pull/1 as draft; no upstream PR, merge, tag or npm publication.
+- Saved task-local failure evidence and concrete one-URL .gitmodules proposal. Existing authorization covers only Trellis dev, so no new fork/submodule branch or .gitmodules write was attempted.
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] PR run43022012893: all four Ubuntu/Windows Node18.17/26.7 jobs failed Checkout. Source head9b8df9a6; actual synthetic merge checkout4cc8e0ba. No test, doctor, replay or smoke step ran.
+- [OK] Linux and Windows logs reject marketplace commit1aa9b326baf93257d6142660e49d3120e7f4b4ef as not our ref from mindfold-ai/marketplace. Local submodule is clean and has exactly one local documentation commit above advertised parent7d5298d.
+- [OK] Committed CLI/marketplace workflow blobs match exactly; working-file CRLF normalization explains initial raw-byte mismatch. Read of bahayonghang/marketplace returned404.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Await explicit permission to create public bahayonghang/marketplace, publish existing1aa9b32 to trellis-reliability-v1, and point the marketplace submodule URL there; then validate actual fetch and fresh PR CI. All CI-gated tasks remain unarchived.

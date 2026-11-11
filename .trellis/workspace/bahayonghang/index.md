@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 4
+- **Total Sessions**: 5
 - **Last Active**: 2026-11-11
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~172 | Active |
+| `journal-1.md` | ~208 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 5 | 2026-11-11 | Hosted reliability CI checkout diagnosis | - | `dev` |
 | 4 | 2026-11-11 | Reliability CI publication preflight | `95f18e1f` | `dev` |
 | 3 | 2026-11-11 | Fork reliability v1: Node18 verification and archive audit | `e7583d64` | `dev` |
 | 2 | 2026-11-11 | Fork reliability v1: Codex 0.167.1 and local integration | `d7cb0fc0`, `e7583d64` | `dev` |
