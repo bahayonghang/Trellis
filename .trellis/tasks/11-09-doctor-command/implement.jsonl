@@ -1,0 +1,10 @@
+{"file":".trellis/spec/cli/backend/quality-guidelines.md","reason":"Minimal command and type-safe schema"}
+{"file":".trellis/spec/cli/backend/commands-doctor.md","reason":"Diagnostic/schema and zero-write contract"}
+{"file":".trellis/spec/cli/backend/error-handling.md","reason":"CLI diagnostic error and exit behavior"}
+{"file":".trellis/spec/cli/backend/logging-guidelines.md","reason":"Human output and clean JSON stdout"}
+{"file":".trellis/spec/cli/backend/filesystem-safety.md","reason":"Read-only scope and symlink/manifest containment"}
+{"file":".trellis/spec/cli/backend/configurator-shared.md","reason":"Python alias/rendering and registry boundary"}
+{"file":".trellis/spec/cli/backend/commands-platforms.md","reason":"Reuse configured-platform ownership contract"}
+{"file":".trellis/spec/cli/unit-test/conventions.md","reason":"Isolation and meaningful corruption tests"}
+{"file":".trellis/spec/cli/unit-test/integration-patterns.md","reason":"Byte snapshots and native/replay confidence boundaries"}
+{"file":".trellis/spec/guides/cross-platform-thinking-guide.md","reason":"Python3.9 and native Windows"}

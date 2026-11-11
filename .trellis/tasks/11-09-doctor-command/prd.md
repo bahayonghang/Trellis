@@ -20,10 +20,20 @@
 
 ## Acceptance Criteria
 
-- [ ] 测试：分别故意破坏 hook 命令路径、删除 `.trellis/workflow.md`、让任务指针指向不存在的目录，doctor 都能定位问题并给出修复步骤。
-- [ ] 运行前后工作区和 `.trellis/` 的文件状态完全一致（测试断言）。
-- [ ] `--json` 输出有 schema 测试。
+- [x] 测试：分别故意破坏 hook 命令路径、删除 `.trellis/workflow.md`、让任务指针指向不存在的目录，doctor 都能定位问题并给出修复步骤。
+- [x] 运行前后工作区和 `.trellis/` 的文件状态完全一致（测试断言）。
+- [x] `--json` 输出有 schema 测试。
 - [ ] 在 Windows 与 Linux CI 中运行。
+
+本机独立复核 doctor 34 项及 platforms 3 项，共 37 项通过；lint、
+typecheck、新测试严格编译、Python 3.9、构建及打包检查通过。真实仓库
+JSON 诊断前后 2,762 个路径/字节条目及 58 个既有缓存条目不变；命令
+如实以 exit 1 报出现有 `.opencode/package.json` 缺失，未修复用户配置。
+输出置信度最高为 probed，不读取历史收据冒充真实宿主验证。
+
+Node 18 本机专项冒烟未运行（未找到既有二进制，不新增安装）；远端
+双平台 CI 尚无结果，保持最后一项未验证、不归档。详见 research 下的
+实施与独立检查记录。
 
 ## Dependencies
 

@@ -1,0 +1,6 @@
+{"file":".trellis/spec/cli/backend/quality-guidelines.md","reason":"Full command review"}
+{"file":".trellis/spec/cli/backend/commands-doctor.md","reason":"Read-only diagnostic and machine-output contract"}
+{"file":".trellis/spec/cli/backend/filesystem-safety.md","reason":"Zero workspace/Git mutation"}
+{"file":".trellis/spec/cli/backend/commands-platforms.md","reason":"Registry-based detection"}
+{"file":".trellis/spec/cli/unit-test/conventions.md","reason":"Corruption/schema and isolation tests"}
+{"file":".trellis/spec/cli/unit-test/integration-patterns.md","reason":"Actual CLI and byte invariance"}
