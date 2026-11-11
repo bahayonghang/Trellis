@@ -50,3 +50,46 @@ Implemented remaining reliability work through the approved portable Codex launc
 - Keep windows-ci and codex-subdir-hooks unarchived pending remote CI and real Codex0.167.0 host smoke; current callable CLI is0.167.1.
 - Do not start replay/doctor before dependencies complete. Parent stays planning; combined native Windows integration not_run.
 - Leave verification-receipts untouched until reliability v1 is complete and has seen a period of real use.
+
+
+## Session 2: Fork reliability v1: Codex 0.167.1 and local integration
+<!-- trellis-session: v=2 fp=2289793d5b482fa8 -->
+
+**Date**: 2026-11-11
+**Task**: Fork reliability v1: Codex 0.167.1 and local integration
+**Package**: cli
+**Branch**: `dev`
+
+### Summary
+
+Completed native Codex 0.167.1 acceptance, archived its child at 956cc7bc, and committed replay plus read-only doctor. Four Windows local integration steps passed; remote CI and CI-dependent archives remain pending under no-push.
+
+### Main Changes
+
+- Native Codex context delivery proven in four layouts; three completed echoes and one interrupted final echo retained honestly. Final combined src preflight completed its marker echo in 6 seconds with zero tools.
+- Versioned Claude/Codex payload replay and schema-backed doctor implemented; doctor confidence remains at most probed without real-host evidence.
+- Task metadata and parent research preserve CI gates, setup refusals, unchanged controls and verification-receipts prerequisites.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d7cb0fc0` | test(hooks): replay versioned Claude and Codex payloads |
+| `e7583d64` | feat(doctor): add read-only local reliability diagnostics |
+
+### Testing
+
+- [OK] Replay: 56 focused tests and 161 related regressions passed. Doctor/platform review: 37 passed; real checkout 2762 entries plus 58 source-cache entries unchanged.
+- [OK] Normal source pre-commit: core401 PASS/2 existing SKIP, CLI2239 PASS/35 existing SKIP. Initial update afterEach timeout retained; unchanged targeted1/1 and file55/55 passed before unchanged full retry.
+- [OK] Root pnpm lint, typecheck and build passed. Four native Windows integration steps passed; 680 protected checkout entries and unrelated cached sentinel unchanged.
+- [NOT RUN] Remote Windows/Linux CI and doctor-specific local Node18 smoke. Payload replay does not establish native host acceptance.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Run remote matrix when publishing is authorized; retain windows-ci, replay, doctor and parent unarchived until their actual CI acceptance is met.
+- Do not start verification-receipts until reliability v1 is complete and has been used for a period.
+- Two generated Temp fixtures remain after automatic approval review rejected cleanup with only blocked by policy; no alternate deletion route attempted.

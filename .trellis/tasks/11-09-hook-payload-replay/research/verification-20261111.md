@@ -102,3 +102,16 @@ This work adds native **input capture** for Codex0.167.1 and local replay
 evidence. It does not turn replay into native Claude acceptance, add a native
 Codex Trellis-role input capture, or replace task5's distinct context-delivery
 host receipt. Constructed role/path/identity variants remain derived.
+
+## Source commit gate
+
+`d7cb0fc0 test(hooks): replay versioned Claude and Codex payloads` passed the
+normal full pre-commit: core401 PASS /2 existing SKIP; CLI2205 PASS /35 existing
+SKIP (96 files PASS /1 existing SKIP),209.43s. Attribution is
+`Ported from mindfold-ai/Trellis#644`. Staged GitNexus scope was LOW:19 files,
+36 test symbols,0 affected processes; no product symbols changed.
+
+The main session also removed its mistakenly added code-file JSONL reference;
+context manifests contain spec/research documents only. This metadata fix does
+not change the tested implementation. Remote CI is still pending, so this task
+remains in_progress and unarchived while later local work proceeds.

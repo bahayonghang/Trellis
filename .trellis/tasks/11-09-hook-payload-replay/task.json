@@ -21,6 +21,6 @@
   "children": [],
   "parent": "11-09-fork-reliability-v1",
   "relatedFiles": [],
-  "notes": "",
+  "notes": "Local implementation/review/full pre-commit passed at d7cb0fc0; remote Windows/Linux CI acceptance pending under no-push. Keep unarchived.",
   "meta": {}
 }

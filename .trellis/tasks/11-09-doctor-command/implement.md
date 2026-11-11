@@ -21,5 +21,8 @@ Local implementation and independent review passed: doctor34 + platforms3 =37;
 strict TS/schema/Python3.9/build/package and byte-preservation checks passed.
 Independent fixes have RED/GREEN evidence: bounded missing plugin paths and
 exact portable-body comparison with three known Python prefixes. Full source
-commit gate is the main session's next step. Remote CI and local Node18 smoke
-remain unverified; no product/project repair or host/model call was performed.
+commit gate passed unchanged at e7583d64 after explicit CRITICAL scope approval:
+core401 /2 existing skips and CLI2239 /35 existing skips. The initial unrelated
+update teardown timeout and unchanged controls are retained in research; its
+cause remains unknown. Remote CI and local Node18 smoke remain unverified;
+no product/project repair or doctor host/model call was performed.

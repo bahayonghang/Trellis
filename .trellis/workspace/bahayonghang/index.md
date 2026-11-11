@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 1
+- **Total Sessions**: 2
 - **Last Active**: 2026-11-11
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~52 | Active |
+| `journal-1.md` | ~95 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 2 | 2026-11-11 | Fork reliability v1: Codex 0.167.1 and local integration | `d7cb0fc0`, `e7583d64` | `dev` |
 | 1 | 2026-11-11 | Fork reliability v1: Windows CI and portable Codex hooks | `5cdbcba1`, `a3d58384`, `18a1614c`, `2e5e4f56`, `9a9e4b65` | `dev` |
 <!-- @@@/auto:session-history -->
 

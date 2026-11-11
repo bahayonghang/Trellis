@@ -128,3 +128,16 @@ so the original cause remains unknown. No old test or archived fix was changed.
 This is not the core channel-sequence lock exception. See
 precommit-update-teardown-20261111.md. A bounded unchanged full-gate retry is
 recorded separately; passage is not presumed.
+
+## Unchanged full retry and source commit
+
+After both unchanged update controls passed, the unchanged normal full gate
+passed: core401 PASS /2 existing SKIP; CLI2239 PASS /35 existing SKIP (97files
+PASS /1 existing SKIP),239.63s. No timeout, concurrency, test/config/source or
+skip adjustment was used to obtain the later pass. The original stalled phase
+and underlying cause remain unknown; this is not a root-cause fix.
+
+`e7583d64 feat(doctor): add read-only local reliability diagnostics` contains
+the reviewed implementation, evidence and explicit CRITICAL approval. Final
+staged scope was16 files /63 symbols /18 expected read flows. Remote CI remains
+unverified and the task stays in_progress/unarchived.

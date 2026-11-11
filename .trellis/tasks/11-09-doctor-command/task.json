@@ -21,6 +21,6 @@
   "children": [],
   "parent": "11-09-fork-reliability-v1",
   "relatedFiles": [],
-  "notes": "Local implementation and independent 37-test review passed; user explicitly approved the 63-symbol/18-flow CRITICAL aggregate for normal full pre-commit/local commit. Remote CI and local Node18 doctor smoke unverified; keep unarchived.",
+  "notes": "Implementation/review and normal full pre-commit passed at e7583d64 after explicit CRITICAL scope approval. Initial unrelated update teardown timeout and unchanged controls retained. Remote CI and local Node18 doctor smoke unverified; keep unarchived.",
   "meta": {}
 }

@@ -1,8 +1,12 @@
 # Doctor aggregate GitNexus stop
 
+Historical stop, subsequently approved by the user. Source commit e7583d64
+passed the normal full gate; see verification-20261111.md for both attempts.
+
 The final staged detect_changes result is CRITICAL: initially14 files,
 63 indexed changed symbols and18 affected flows. This additional scope record
-does not change product symbols/flows. No doctor commit has been attempted.
+does not change product symbols/flows. No doctor commit had been attempted at
+the time of the stop.
 The user requires a stop/explanation for HIGH/CRITICAL; earlier getHooksConfig
 and gitignore approvals do not approve this new aggregate scope.
 
