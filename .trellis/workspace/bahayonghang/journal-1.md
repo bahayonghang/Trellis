@@ -131,3 +131,42 @@ Closed the doctor-specific local Node18.17.0 verification gap and audited all 14
 - CI-dependent windows-ci, replay and doctor plus planning parent remain unarchived until actual acceptance is met; no push without explicit changed authorization.
 - Keep verification-receipts untouched until v1 completion plus a period of real use.
 - Original two policy-blocked fixtures remain. New Node18 fixture trellis-doctor-node18-67a5008f5987 also remains after one contained cleanup rejection: blocked by policy; no workaround or retry.
+
+
+## Session 4: Reliability CI publication preflight
+<!-- trellis-session: v=2 fp=fd16329f16b807d0 -->
+
+**Date**: 2026-11-11
+**Task**: Reliability CI publication preflight
+**Package**: cli
+**Branch**: `dev`
+
+### Summary
+
+Resumed the supplied handoff, prepared the complete source-delivery inventory and draft PR, and requested the separately required dev publication authorization. CI-dependent tasks remain open.
+
+### Main Changes
+
+- Confirmed dev at the handoff baseline, empty initial index, Python3.9.25, 57 unpublished commits and 343 changed files against the live fork main; preserved the handoff and committed two new parent research documents.
+- Confirmed 11 of 14 children archived; three CI-gated children remain in_progress and parent remains planning. No product/config/timeout/concurrency/skip or protected-task edits.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `95f18e1f` | chore(task): prepare reliability CI publication review |
+
+### Testing
+
+- [OK] First normal pre-commit: core401 pass/2 existing skips; CLI2238 pass/1 failure/35 existing skips. Existing platforms byte-parity case timed out at30s; root cause remains unknown.
+- [OK] Unchanged controls passed: selected parity1/1 in7.178s (56 filtered), full platforms57/57 in60.92s. No test or configuration changes.
+- [OK] Unchanged-source normal full retry passed: core401/2 existing skips; CLI2239/35 existing skips,262.91s. Staged GitNexus:3 documentation files, no indexed symbol overlap; punctuation/format checks passed.
+- [OK] Live GitHub queries found no dev branch or matching PR; origin/main=f089cb32 and authenticated connector login=bahayonghang. Product/CI/host inputs unchanged since e7583d64; reused prior native and Node18 evidence explicitly.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Await the separate publishing answer before any remote write; if approved, push only dev, create/reuse a fork-local draft PR, and record actual PR-triggered matrix SHAs, jobs and suites before sequential child/parent acceptance.
