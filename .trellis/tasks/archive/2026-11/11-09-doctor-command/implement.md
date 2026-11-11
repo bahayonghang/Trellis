@@ -29,3 +29,9 @@ passes five diagnostic cases, three schema rejection controls and full fixture/
 Git byte invariance per run; see research/node18-smoke-20261111.md. Remote CI
 remains unverified; no product/project repair or doctor host/model call was
 performed.
+
+The later 2026-11-11 user instruction changes this closeout to local-only.
+The PRD accepts the completed local diagnostics/schema/read-only gates and
+matrix inclusion; hosted execution is outside this round. Historical checkout
+failures and not-run tests remain explicit. Archive against the revised local
+criteria without a new product edit or an invented CI/host-verification result.
