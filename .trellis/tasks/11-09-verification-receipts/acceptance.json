@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "inputs": [
+    ".trellis/scripts",
+    "packages/cli/src/templates/trellis/scripts",
+    "packages/cli/src/templates/trellis/index.ts",
+    "packages/cli/test/scripts/task-verification.integration.test.ts",
+    "packages/cli/test/scripts/task-archive.integration.test.ts",
+    "packages/cli/test/scripts/task-archive-scope.integration.test.ts",
+    "packages/cli/test/scripts/task-meta.integration.test.ts",
+    "packages/cli/test/scripts/task-create-keep-active.integration.test.ts",
+    "packages/cli/test/setup.ts",
+    "packages/cli/vitest.config.ts",
+    "packages/cli/tsconfig.json",
+    "packages/cli/package.json",
+    "package.json",
+    "pnpm-workspace.yaml",
+    "pnpm-lock.yaml",
+    "pyproject.toml",
+    "uv.lock",
+    ".trellis/spec/cli/backend/index.md"
+  ],
+  "criteria": [
+    {
+      "id": "AC01",
+      "command": "receipts.ac01"
+    },
+    {
+      "id": "AC02",
+      "command": "receipts.ac02"
+    },
+    {
+      "id": "AC03",
+      "command": "receipts.ac03"
+    },
+    {
+      "id": "AC04",
+      "command": "receipts.ac04"
+    },
+    {
+      "id": "AC05",
+      "command": "receipts.ac05"
+    },
+    {
+      "id": "AC06",
+      "command": "receipts.ac06"
+    },
+    {
+      "id": "AC07",
+      "command": "receipts.ac07"
+    },
+    {
+      "id": "AC08",
+      "command": "receipts.ac08"
+    },
+    {
+      "id": "AC09",
+      "command": "receipts.ac09"
+    },
+    {
+      "id": "AC10",
+      "command": "receipts.ac10"
+    },
+    {
+      "id": "QUALITY.LINT",
+      "command": "quality.lint"
+    },
+    {
+      "id": "QUALITY.TYPES",
+      "command": "quality.types"
+    },
+    {
+      "id": "QUALITY.PYTHON",
+      "command": "quality.python"
+    },
+    {
+      "id": "QUALITY.TEST-TYPES",
+      "command": "quality.test-types"
+    },
+    {
+      "id": "QUALITY.BUILD",
+      "command": "quality.build"
+    },
+    {
+      "id": "QUALITY.PACKAGE",
+      "command": "quality.package"
+    }
+  ]
+}

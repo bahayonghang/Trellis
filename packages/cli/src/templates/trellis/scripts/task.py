@@ -11,6 +11,9 @@ Usage:
     python3 task.py start <dir>                 # Set active task, record current branch
     python3 task.py current [--source] [--json] # Show active task
     python3 task.py finish                      # Clear active task
+    python3 task.py verify <dir> [--json]       # Run registered acceptance checks
+    python3 task.py verification-status <dir> [--json] # Inspect current receipts
+    python3 task.py verify-confirm <dir> <id> --note <text> [--json] # Acknowledge manual evidence
     python3 task.py set-branch <dir> <branch>   # Set git branch
     python3 task.py set-base-branch <dir> <branch>  # Set PR target branch
     python3 task.py set-scope <dir> <scope>     # Set scope for PR title
@@ -55,6 +58,7 @@ from common.io import (
 )
 from common.task_utils import resolve_task_dir, run_task_hooks
 from common.tasks import iter_active_tasks, children_progress
+from common.task_verification import cmd_verify, cmd_verification_status, cmd_verify_confirm
 
 # Import command handlers from split modules (also re-exports for plan.py compatibility)
 from common.task_store import (
@@ -731,6 +735,19 @@ def main() -> int:
         help="Print the change set without writing anything",
     )
 
+    # Explicit verification commands never run from ordinary lifecycle hooks.
+    for command_name, description in (
+        ("verify", "Run registered acceptance checks"),
+        ("verification-status", "Inspect current verification evidence"),
+        ("verify-confirm", "Acknowledge one manual acceptance criterion"),
+    ):
+        verification_parser = subparsers.add_parser(command_name, help=description)
+        verification_parser.add_argument("dir", help="Task directory or name")
+        verification_parser.add_argument("--json", action="store_true", help="Output machine-readable JSON")
+        if command_name == "verify-confirm":
+            verification_parser.add_argument("criterion", help="Manual criterion ID")
+            verification_parser.add_argument("--note", required=True, help="Explicit observation/confirmation")
+
     # archive
     p_archive = subparsers.add_parser("archive", help="Archive task")
     p_archive.add_argument("name", help="Task directory or name")
@@ -784,6 +801,9 @@ def main() -> int:
         "set-meta": cmd_set_meta,
         "rename": cmd_rename,
         "archive": cmd_archive,
+        "verify": cmd_verify,
+        "verification-status": cmd_verification_status,
+        "verify-confirm": cmd_verify_confirm,
         "add-subtask": cmd_add_subtask,
         "remove-subtask": cmd_remove_subtask,
         "list": cmd_list,

@@ -1309,6 +1309,13 @@ def cmd_archive(args: argparse.Namespace) -> int:
             Colors.RED), file=sys.stderr)
         return 1
 
+    from .verification import archive_verification_error
+    verification_error = archive_verification_error(task_dir, repo_root)
+    if verification_error:
+        print(colored(f"Error: {verification_error}", Colors.RED), file=sys.stderr)
+        print("Not archived; run task.py verify and inspect verification-status.", file=sys.stderr)
+        return 1
+
     # Check the destination before anything below mutates task state. The
     # mover refuses a collision too, but by then this command has already
     # marked the task completed, re-parented its children and cleared the

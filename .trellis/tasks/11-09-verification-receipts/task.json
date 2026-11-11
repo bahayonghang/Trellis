@@ -2,8 +2,8 @@
   "id": "verification-receipts",
   "name": "verification-receipts",
   "title": "可执行验收与验证收据",
-  "description": "TL17-19: 结构化验收标准、受信任的命令运行器、绑定输入 hash 的收据和 completed/archive 门禁；需先做 brainstorm，OpenSpec 桥接是否需要另行决定",
-  "status": "planning",
+  "description": "TL17-19: 结构化验收、受信任的 argv 命令、输入指纹收据与可选 strict 归档门禁；按已确认方案本地实现，OpenSpec 不纳入 V1",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": "cli",
@@ -12,7 +12,7 @@
   "assignee": "bahayonghang",
   "createdAt": "2026-11-09",
   "completedAt": null,
-  "branch": null,
+  "branch": "dev",
   "base_branch": "main",
   "worktree_path": null,
   "commit": null,
@@ -22,5 +22,7 @@
   "parent": null,
   "relatedFiles": [],
   "notes": "",
-  "meta": {}
+  "meta": {
+    "verification": "strict"
+  }
 }
