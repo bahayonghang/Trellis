@@ -9,10 +9,11 @@ separate from evidence status and preserve existing task behavior by default.
 
 ## Status and source requirements
 
-In progress. On 2026-11-11 the user explicitly approved this proposal for
-implementation. Reliability v1 is completed locally; the earlier trial-period
-deferral is superseded for this task. Work remains local, with no push or
-publication.
+Completed locally on 2026-11-11 after user approval of this proposal. The earlier
+trial-period deferral is superseded for this task. The implementation passed the
+normal full commit gate and this task's own registered checks; fresh strict
+evidence permitted its actual archive. Work remains local, with no push or
+publication. Final evidence is in research/local-verification-20261111.md.
 
 The original four requirements are retained: distinguish failure/timeout/not-run/
 manual confirmation, invalidate evidence after relevant input changes, enforce
@@ -83,10 +84,10 @@ The approved design defines the implemented first-version contracts.
 - [x] AC08: Status inspection executes no checks and does not rewrite task,
       receipt or Git state. Declared invalid/outside/symlink inputs fail explicitly;
       no writes escape the owned runtime evidence directory.
-- [ ] AC09: Durable tests prove the negative controls above and real output/
+- [x] AC09: Durable tests prove the negative controls above and real output/
       byte-preservation behavior. Python3.9 checks, lint/typecheck/build/package and
       normal full commit gates pass without new skip/timeout/concurrency changes.
-- [ ] AC10: Installed template and dogfood scripts match. This task exercises
+- [x] AC10: Installed template and dogfood scripts match. This task exercises
       the new verification path on itself after implementation, then receives its
       own strict, locally evidenced archive and separate normal archive commit.
 
