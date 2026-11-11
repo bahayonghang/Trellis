@@ -57,6 +57,12 @@
 - [ ] Windows CI 与 Linux CI 均为绿色。
 - [ ] 端到端冒烟（Windows，原生 PowerShell）：`trellis init` → 修改 workflow.md → 增加一个平台 → `trellis update --dry-run` 仍识别修改 → 建任务 A、再建 B 后 A 仍是当前任务 → 归档 A，其它已暂存内容不变 → 从 `src/` 子目录启动 Codex，hook 能注入上下文。
 
+## 其它平台启动路径后续核验（#667 规划盘点）
+
+`11-09-codex-subdir-hooks/research/host-0167.md` 记录了相对入口同形状清单：Claude、Cursor、Copilot、Gemini、Qoder、CodeBuddy、Droid、Trae、Kiro、Snow 共 10 个平台。只确认模板命令含相对路径，未复现这些宿主的 cwd 行为，不能直接判为同一缺陷。本轮只修 Codex，不自动扩成跨平台启动器重构或创建新任务。
+
+ZCode 已使用项目根变量；OpenCode/Pi/OMP 是插件或扩展入口，不是同一 Python shell 命令形状。其运行时行为不在本次盘点的验证结论内。
+
 ## Out of Scope（暂缓的文档项及原因）
 
 - TL13 channel 权限档位、TL32 生命周期 hook 信任：仅在实际使用 channel 或打开不可信仓库时需要。
