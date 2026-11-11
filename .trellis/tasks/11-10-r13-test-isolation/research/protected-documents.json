@@ -1,0 +1,17 @@
+{
+  "worktree_sha256": {
+    ".trellis/tasks/11-09-codex-subdir-hooks/design.md": "11d7ba66655e7de2d7c00cdd7bbf4c51f51210308c9ce19006f2f0e43f008d80",
+    ".trellis/tasks/11-09-codex-subdir-hooks/implement.md": "cbbafa646df2cea04646b32549939829304ea03c0a84bd27e869b94729b34888",
+    ".trellis/tasks/11-09-codex-subdir-hooks/prd.md": "39ae7673d1d5351a71b4eba01e2d9cac95c7a2179d64a3b95a841a10b88c8e3e",
+    ".trellis/tasks/11-09-codex-subdir-hooks/research/host-0167.md": "43077265e6391ffb86f271a6abb41592cf2e403aa0e97581970b38f18a6dae42",
+    ".trellis/tasks/11-09-fork-reliability-v1/prd.md": "f516db6b7d7d34f6d312aa2babd21086040da8e92ff92829615979ad0db80966",
+    ".trellis/tasks/11-09-codex-subdir-hooks/research/precommit-r13-fixture.md": "49ef203d4444e4d368c2861ff9642a4f26c964ecfc5647d6d36d61e4024ab473"
+  },
+  "index_entries": [
+    "100644 34618b3a013f0db876d3dfa0fec034e964a2f694 0\t.trellis/tasks/11-09-codex-subdir-hooks/design.md",
+    "100644 e805727a59990afe855605df3e71097b3ca575a0 0\t.trellis/tasks/11-09-codex-subdir-hooks/implement.md",
+    "100644 1770550b7df3fe770d8a167b075b676600e72cdd 0\t.trellis/tasks/11-09-codex-subdir-hooks/prd.md",
+    "100644 9868cce24efb2b3015a6d667bd1cdf996e00c2b5 0\t.trellis/tasks/11-09-codex-subdir-hooks/research/host-0167.md",
+    "100644 0a9141f21171c1acbc6d177f63efd13277d94c7b 0\t.trellis/tasks/11-09-fork-reliability-v1/prd.md"
+  ]
+}

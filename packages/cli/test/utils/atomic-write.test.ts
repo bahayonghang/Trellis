@@ -26,49 +26,27 @@ describe("writeFileAtomic Windows rename recovery (R13)", () => {
       fs.writeFileSync(target, "old");
       const realRename = fs.renameSync.bind(fs);
       const failure = Object.assign(new Error("locked target"), { code });
-      const rename = vi
-        .spyOn(fs, "renameSync")
-        .mockImplementationOnce(() => {
+      let injected = 0;
+      vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
+        if (injected < 2) {
+          injected++;
+          expect(fs.readFileSync(target, "utf-8")).toBe("old");
           throw failure;
-        })
-        .mockImplementationOnce(() => {
-          throw failure;
-        })
-        .mockImplementation(realRename);
-      const wait = vi.spyOn(Atomics, "wait").mockReturnValue("timed-out");
+        }
+        return realRename(from, to);
+      });
+      // Keep native publication and its production waits together. Exact
+      // first/third/final success schedules live in rename.test.ts.
       const write = vi.spyOn(fs, "writeFileSync");
 
       writeFileAtomic(target, "new");
 
-      expect(rename).toHaveBeenCalledTimes(3);
-      expect(wait.mock.calls.map((call) => call[3])).toEqual([10, 20]);
+      expect(injected).toBe(2);
       expect(write).toHaveBeenCalledTimes(1);
       expect(fs.readFileSync(target, "utf-8")).toBe("new");
       expect(fs.readdirSync(dir)).toEqual(["state.json"]);
     },
   );
-
-  it("allows success on the final retry after the full 550 ms backoff schedule", () => {
-    vi.spyOn(process, "platform", "get").mockReturnValue("win32");
-    const target = path.join(dir, "state.json");
-    const realRename = fs.renameSync.bind(fs);
-    let attempts = 0;
-    const rename = vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
-      if (attempts++ < 10)
-        throw Object.assign(new Error("busy"), { code: "EBUSY" });
-      return realRename(from, to);
-    });
-    const wait = vi.spyOn(Atomics, "wait").mockReturnValue("timed-out");
-
-    writeFileAtomic(target, "new");
-
-    expect(rename).toHaveBeenCalledTimes(11);
-    expect(wait.mock.calls.map((call) => call[3])).toEqual([
-      10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
-    ]);
-    expect(fs.readFileSync(target, "utf-8")).toBe("new");
-    expect(fs.readdirSync(dir)).toEqual(["state.json"]);
-  });
 
   it.each([
     { platform: "win32", code: "EPERM", attempts: 11 },

@@ -220,6 +220,60 @@ Evidence: `.trellis/tasks/11-09-archive-commit-scope/research/pi-context-precomm
 
 Historical baseline and R13 counts above remain unchanged.
 
+## Follow-up: R13 test isolation (2026-11-10)
+
+The rejected planning-hook run at HEAD `069d1400` observed the original
+`atomic-write.test.ts` fixture expecting three rename calls but receiving five
+after two injected transient failures. This is consistent with extra recoverable
+native failures, but the native error codes and locking process were not captured;
+this evidence does not attribute them to antivirus, indexing, or any process.
+
+Deterministic RED controls replayed that coupling without changing the shared
+worktree: a disposable copy of the old TS fixture injected two additional
+recoverable native failures and failed with **5 calls instead of 3**; the old
+Python fixture likewise observed **5 attempts instead of 3** for both writers.
+A throwing-native-success canary also failed the old Python success cases,
+proving that the supposed-success branch delegated to native `os.replace`.
+The replay controls were removed after each run.
+
+The repaired boundary separates exact syscall contracts from publication:
+`rename.test.ts` controls the real retry helper at the external `renameSync`
+boundary and pins first success/no wait, 2→success, final allowed success,
+all three Windows lock codes, the 11-attempt cap, 10–100 ms waits and exact
+final error. Atomic-write and ablation tests retain native publication,
+production waiting, old-data preservation, exact bytes, cleanup and recovery;
+they count only their injected target prefix where native contention is allowed
+to add legitimate retries. The Python test has the same controlled replace
+boundary with prepared temp-byte/argument assertions and a separate real
+text/JSON publication probe.
+
+Validation evidence: four focused files **84 passed**; deterministic replay
+**3 passed** on the repaired worktree (including the extra-failure and canary
+controls); strict test-inclusive TypeScript, ESLint and Prettier passed; the
+serial lint, typecheck, Python lint (0 errors, 68 existing warnings), and build
+gates passed. The full suite then passed with core **401 passed / 2 existing
+skipped** and CLI **2049 passed / 35 existing skipped** (89 files passed, 1
+existing-skipped file; 2084 tests total). The implementer reported that the first
+full-test invocation exceeded the agent's 120-second command ceiling. Its
+`gate-test.log` ends after passing Windows configurator tests, without a CLI
+summary or recorded assertion failure; it is incomplete, not passing evidence.
+The longer invocation recorded the complete pass in `gate-test-final.log`
+(340.33 seconds). No production files, platform copies, dependencies, retries,
+skips or timeout settings were changed. A separate `uv run --locked` CPython
+3.9.25 smoke also passed both writers' controlled 0/2/10-failure schedules and
+real publication checks.
+
+Independent review restored an exact Python directory-cardinality check (target
+plus one controlled-success temp, target only on failure/interrupt) and pinned
+replay RED to pre-repair commit `069d1400ea88d46f1480a6e8987fd582d19b9446`,
+so moving HEAD or archiving the task does not invalidate the replay. Fresh
+post-review checks passed: 84 focused tests, strict test-inclusive TypeScript,
+ESLint/Prettier, both RED/GREEN modes, CPython 3.9.25's full 18 controlled and
+4 native-publication cases, and all five serial quality gates. The fresh full
+suite again passed core 401/2 existing skips and CLI 2049/35 existing skips
+(CLI duration 178.18 seconds). See the task's `research/independent-check.md`
+for findings, command evidence, tool limits and protected-document checks.
+
 ## Known Issues
 
 1. **pnpm 12 install failed by default (fixed).** Commit `7d2d8742` moved the

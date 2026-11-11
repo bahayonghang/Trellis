@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/cli/unit-test/conventions.md", "reason": "Exact meaningful assertions, fixture isolation and unchanged validation budgets"}
+{"file": ".trellis/spec/cli/unit-test/mock-strategies.md", "reason": "Controlled external-syscall units versus real filesystem integration; no internal-module mocking"}
+{"file": ".trellis/spec/cli/unit-test/integration-patterns.md", "reason": "Retain real publication, original-data and cleanup/recovery checks"}
+{"file": ".trellis/spec/cli/backend/filesystem-safety.md", "reason": "R13 exact retry/cap/error/cleanup contract; production must not change"}
+{"file": ".trellis/spec/guides/cross-platform-thinking-guide.md", "reason": "Known native Windows rename contention and platform/interpreter validation"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplicate exact-contract coverage and a generic fake filesystem"}
+{"file": ".trellis/tasks/11-10-r13-test-isolation/research/scope-and-evidence.md", "reason": "Observed pre-commit failure, four-file audit, preservation and proposed separation"}

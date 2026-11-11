@@ -150,9 +150,10 @@ describe("ablation-store", () => {
       const scenario = prepareRenameScenario(kind);
       const originalManaged = kind === "file" ? "ablated\n" : "managed\n";
       const realRename = fs.renameSync.bind(fs);
-      let attempts = 0;
+      let injected = 0;
       vi.spyOn(fs, "renameSync").mockImplementation((source, destination) => {
-        if (destination === scenario.destination && attempts++ < 2) {
+        if (destination === scenario.destination && injected < 2) {
+          injected++;
           if (kind !== "directory") {
             expect(
               fs.readFileSync(path.join(projectDir, "managed.txt"), "utf-8"),
@@ -162,12 +163,11 @@ describe("ablation-store", () => {
         }
         return realRename(source, destination);
       });
-      const wait = vi.spyOn(Atomics, "wait").mockReturnValue("timed-out");
-
+      // Real metadata and publication renames retain production waiting.
+      // The exact third-attempt schedule is controlled in rename.test.ts.
       scenario.run();
 
-      expect(attempts).toBe(3);
-      expect(wait.mock.calls.map((call) => call[3])).toEqual([10, 20]);
+      expect(injected).toBe(2);
       if (scenario.transaction) verifyRestoredState(scenario.transaction);
       expect(loadAblationTransaction(projectDir)?.state.status).toBe(
         kind === "staging" ? "preparing" : "restoring",
@@ -204,7 +204,8 @@ describe("ablation-store", () => {
         }
         return realRename(source, destination);
       });
-      const wait = vi.spyOn(Atomics, "wait").mockReturnValue("timed-out");
+      // Only the selected publication always fails. Metadata renames remain
+      // native, so neither their attempts nor their waits belong in this count.
       let caught: unknown;
       try {
         scenario.run();
@@ -214,7 +215,6 @@ describe("ablation-store", () => {
 
       expect(caught).toBe(failure);
       expect(calls).toBe(attempts);
-      expect(wait).toHaveBeenCalledTimes(attempts - 1);
       expect(
         fs
           .readdirSync(projectDir)

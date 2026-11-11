@@ -93,12 +93,28 @@ intact until publication; an uncontended rename never sleeps; persistent
 permission denial still fails after 11 attempts. Cleanup remains caller-owned
 and best-effort/existing recovery semantics must not be weakened.
 
-**Tests required:** injected filesystem errors in `test/utils/atomic-write.test.ts`
-and `test/utils/ablation-store.test.ts` pin all three codes, limits, fail-fast,
-original errors/data, temp cleanup and recoverable transactions. Direct success
-coverage is in `test/utils/rename.test.ts`; `test/scripts/io.integration.test.ts`
-executes Python text/JSON writers with patched platform and sleep, including
-interrupt cleanup. Do not replace these with Vitest retries or larger timeouts.
+**Tests required:** `test/utils/rename.test.ts` pins controlled first/third/final
+success, all three lock codes, the 11-attempt cap, full 10–100 ms schedule and
+exact final error. Its missing-source canary makes native-success delegation
+fail. Atomic-write tests retain controlled fail-fast/original-error cases plus
+real write-once publication, old-data preservation and temp cleanup. Ablation
+staging/file/directory tests retain real publication and recoverable transactions;
+selected always-failing publication targets still assert their exact cap/error.
+The late directory EIO cleanup control remains native-passthrough and unchanged.
+
+`test/scripts/io.integration.test.ts` executes both Python writers: controlled
+replace outcomes and sleep pin the exact schedule/platform/interrupt contracts,
+with a throwing-native canary and real prepared bytes/arguments. Separate real
+text/JSON publication cases verify exact bytes and no leftover temp files.
+
+**Test boundary:** exact syscall units are a narrow exception to the no-fs-mocks
+rule; never delegate controlled success to native rename/replace under mocked
+zero waits. Native-publication integration must retain production waiting and
+all data/cleanup checks. Count an injected prefix independently of additional
+legitimate native retries; do not assert a global wait count across unrelated
+metadata operations. Exact counts/schedules remain asserted in controlled units,
+not loosened or deleted. See [Mock Strategies](../unit-test/mock-strategies.md#r13-controlled-retry-units-vs-native-publication).
+Do not replace these with Vitest retries or larger timeouts.
 
 **Wrong vs correct:** `fs.renameSync(tmp, target)` at these CLI publication sites
 fails on a transient lock; use `renameSyncWithRetry(tmp, target)` without changing

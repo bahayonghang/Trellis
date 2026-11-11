@@ -113,10 +113,57 @@ expect(inquirer.prompt).not.toHaveBeenCalled();
 
 | What | Why |
 |------|-----|
-| `fs` (node:fs) | Tests run against real temp directories |
+| `fs` (node:fs) as a whole | Tests run against real temp directories; narrow R13 syscall exception below |
 | `path` (node:path) | Pure computation, deterministic |
 | Internal modules (`configurators/`, `utils/`, `templates/`) | Let real code execute |
 | `chalk` | Auto-detects no TTY and disables colors |
+
+---
+
+## R13: Controlled Retry Units vs Native Publication
+
+**Scope / signatures:** tests of `renameSyncWithRetry(from, to): void` and
+Python `write_text_atomic(path, text) -> bool` / `write_json(path, data) -> bool`.
+Only exact retry units may control individual `fs.renameSync` / `os.replace`
+results and `Atomics.wait` / `time.sleep`. Run the real retry and caller modules;
+do not mock internal modules or the entire filesystem.
+
+**Contract:** a controlled success returns without delegating to native rename.
+Pin first success (one call, no waits), two failures then success (three calls,
+10/20 ms), final success and exhaustion (11 calls, 10–100 ms), exact final error,
+all three CLI lock codes, Python PermissionError, platform fail-fast and interrupt
+cleanup. Use missing-source or throwing-native canaries to detect delegation.
+Prepared temp bytes and syscall arguments remain real/asserted in Python units;
+a controlled successful replace leaves a temp behind and is **not** a publication
+or successful-cleanup proof.
+
+**Integration:** retain real temp directories, native publication **and production
+waiting**, exact bytes, old data during injected failures, cleanup and recoverable
+ablation state. A small controlled error prefix may exercise recovery; count that
+prefix, not total native attempts or global waits. Native Windows contention may
+legitimately add bounded retries. Failure-only target injection can count exact
+target attempts while unrelated metadata operations remain native.
+
+**Good/base/bad:** controlled first/final success plus separate real file/directory
+and text/JSON publication; deterministic native-unavailable/extra-failure controls;
+never native-success delegation under mocked zero waits plus an exact call count.
+
+```typescript
+// Wrong: native contention contaminates the exact third-attempt assertion.
+if (++attempts <= 2) throw failure;
+return nativeRename(from, to); // while Atomics.wait is mocked
+
+// Correct in an exact unit: no native success delegate.
+if (++attempts <= 2) throw failure;
+return; // publication is verified separately with real waits
+```
+
+Tests: `test/utils/rename.test.ts` owns exact success/cap/schedule and a
+missing-source canary; atomic-write and ablation-store tests keep real data,
+cleanup and recovery. `test/scripts/io.integration.test.ts` separates a controlled
+Python probe with a throwing-native canary from real text/JSON publication.
+Keep general command/integration filesystem rules unchanged. Do not substitute
+copy/unlink for atomic publication or add retries, skips or larger timeouts.
 
 ---
 
