@@ -3,7 +3,7 @@
   "name": "windows-ci",
   "title": "原生 Windows CI 矩阵",
   "description": "TL04: CI 增加 windows-latest，覆盖 PowerShell、中文/空格路径、CRLF 与真实 Python",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "package": "cli",
@@ -11,7 +11,7 @@
   "creator": "bahayonghang",
   "assignee": "bahayonghang",
   "createdAt": "2026-11-09",
-  "completedAt": null,
+  "completedAt": "2026-11-11",
   "branch": "dev",
   "base_branch": "main",
   "worktree_path": null,
@@ -21,6 +21,6 @@
   "children": [],
   "parent": "11-09-fork-reliability-v1",
   "relatedFiles": [],
-  "notes": "",
+  "notes": "Accepted as local-only delivery per user instruction on 2026-11-11. Matrix/local checks complete; historical hosted runs failed Checkout due to unpublished marketplace gitlink and are not passing evidence. No further publishing; see research/local-closeout-20261111.md.",
   "meta": {}
 }

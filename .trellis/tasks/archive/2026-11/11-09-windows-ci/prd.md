@@ -5,7 +5,7 @@
 为 fork 增加原生 Windows CI，让 CRLF、路径、PowerShell 和 Python 启动方式
 相关的问题在 CI 中暴露，而不是在日常使用时才发现。（TL04）
 
-## 现状
+## 原始现状（实施前）
 
 `.github/workflows/ci.yml` 只有一个 `ubuntu-latest` job（Node 20、Python 3.9、pnpm 12.18.0），
 并且只在 `main` 的 push/PR 上触发。
@@ -19,16 +19,19 @@
 - 增加一条 CLI 冒烟流程（Windows 与 Linux 都跑）：在路径含中文和空格的临时目录中执行 `init` → `task.py create/start` → `task.py validate` → `task.py archive` → `update --dry-run`。
 - 基线中已知的 Windows 失败（见 `fork-baseline`）要么修复，要么显式 skip 并注明原因与 issue；不能通过放宽断言或加大超时来掩盖问题。
 
-- 在 Windows CI 上确认“写临时文件再 rename 覆盖”类偶发失败（`EPERM`/`EACCES`/`EBUSY`、Python `PermissionError`）已经消失。修复本身在 `windows-test-failures` 的 R11（已完成）和 R13 中；规则见 `guides/cross-platform-thinking-guide.md` 第 6a 节。
+- 在本机 Windows 完整回归中覆盖“写临时文件再 rename 覆盖”类修复（`EPERM`/`EACCES`/`EBUSY`、Python `PermissionError`）。修复本身在 `windows-test-failures` 的 R11 和 R13 中；规则见 `guides/cross-platform-thinking-guide.md` 第 6a 节。本轮按用户最新要求仅做本地交付，远端 Windows CI 验收不再作为归档条件。
 
 ## Acceptance Criteria
 
-- [ ] 一个 PR 能触发 Linux 与 Windows 两个 job，并都为绿色。
-- [x] 冒烟流程在中文/空格路径下通过（本机 Windows，Node 18.17/26.7，Python 3.9.25；远端矩阵尚待运行）。
+- [x] 本地交付 Ubuntu/Windows 与 Node 18.17/26.7 矩阵及 dev 触发配置，并完成配置复核。远端绿色结果移出本轮本地验收，历史 checkout 失败保留。
+- [x] 冒烟流程在中文/空格路径下通过（本机 Windows，Node 18.17/26.7，Python 3.9.25）。
 - [x] 每个 skip 都列出原因；真实宿主（Claude Code / Codex）的冒烟测试不在 CI 范围内，并在文档中注明。
 
-执行证据见 `research/verification.md`。本轮禁止 push，未获得 GitHub Actions
-双平台绿色结果，故保持 in_progress、不归档；本机通过不替代远端验收。
+2026-11-11 用户明确改为“不用发布，保持本地”，按本地交付验收收尾。
+原远端绿色要求由此移出本轮范围，不被改写成已通过。两个已发生的 PR CI
+run 均在 checkout 因 marketplace 提交不可获取而失败，测试未运行；不再
+创建 marketplace fork 或发布修复。证据见 `research/local-closeout-20261111.md`、
+`research/ci-checkout-failure-20261111.md` 及原始 `research/verification.md`。
 
 ## Dependencies
 
