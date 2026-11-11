@@ -1,5 +1,10 @@
 # Portable Codex launcher implementation evidence
 
+This records the implementation/automation checkpoint at commits 9a9e4b65 /
+1905dae0. The subsequent user instruction changes real-host acceptance to
+0.167.1; current native-host results belong in host-01671.md. Historical
+not-run statements below describe the earlier checkpoint, not the new run.
+
 ## Boundaries
 
 Implementation and automation only. Current local CLI is Codex 0.167.1, not

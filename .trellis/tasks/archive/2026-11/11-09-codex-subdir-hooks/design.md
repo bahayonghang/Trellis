@@ -2,7 +2,7 @@
 
 **状态：用户已批准方案 A 与旧默认 hooks.json 镜像同步。** 用户另行接受
 getHooksConfig 的 HIGH 影响范围（17 个上游节点），允许按既定方案继续。
-未完成真实 Codex 0.167.0 宿主验收。
+真实宿主验收目标已按 2026-11-11 用户指示升级为 Codex 0.167.1。
 
 ## 根因与约束
 
@@ -38,13 +38,18 @@ Codex 的 session cwd
 - 添加目标脚本目录到子进程 import path，使用同一 Python 进程运行目标入口，不切换 cwd。原 hook 仍依据自己的提示优先级处理上下文。
 - 不新增事件、CLI 命令、环境变量、公共配置开关、外部服务或 Python 依赖。保留 `{{PYTHON_CMD}}` 与 `-X utf8` 的既有平台渲染。
 
-固定 ASCII 常量已通过源码等价 cmd raw_arg、PowerShell 7、Windows Git Bash 的只读引号探针；完整 bootstrap 还未实现或验证。原生 Linux 验证仍归 CI，不能用 Git Bash 替代。
+规划阶段的固定 ASCII 常量通过了只读引号探针；完整 bootstrap 现已在
+9a9e4b65 实现，45 项启动器回归及 4 项显式 Git Bash 上下文检查通过，
+见 `research/verification-20261111.md`。原生 Linux 验证仍归 CI，不能用
+Git Bash 替代。
 
 ## 源与镜像
 
 `templates/codex/index.ts` 生成启动命令，`templates/codex/hooks.json` 保留原事件/匹配器/超时配置，`configurators/codex.ts` 负责 Codex 范围的合并/迁移。
 
-本地 `.codex/hooks.json` 匹配旧模板的 python3 渲染，而非 Windows python 渲染。此次审批若通过，允许针对这个已核对的旧默认渲染同步新配置；不据此改动三个已有差异的子代理 hook、其它配置、模型设置、`.pi`、marketplace 或本地 workflow。
+规划时本地 `.codex/hooks.json` 匹配旧模板的 python3 渲染，而非 Windows
+python 渲染；获批后仅按该已核对基线同步新配置。三个已有差异的子代理
+hook、其它配置、模型设置、`.pi`、marketplace 和本地 workflow 均保留。
 
 预计涉及约 12 个源/测试/镜像/规范文件，**超过 8 个**：Codex 模板 index/hooks.json、Codex configurator、update 接入、模板/平台/update 测试、新 launcher 进程测试、卸载测试、dogfood hooks.json、平台与更新规范。不是通用平台启动器重构。
 
@@ -64,7 +69,7 @@ Codex 的 session cwd
 
 ## 验证与授权关卡
 
-1. **按本轮用户指示，先完成代码与自动化测试。** 先做实际生成命令的持久离线 RED，再实现方案 A。本轮命令行实测为 0.167.1，历史 0.167.0 证据仍保留；不得替代指定的 0.167.0 真实宿主验收。环境做不到时，代码和自动化测试完成后停止、不归档，不操作信任记录。
+1. **代码与自动化已完成；继续真实 Codex 0.167.1 验收。** 2026-11-11 用户将目标从 0.167.0 升级到 0.167.1，要求继续后续验证。保留历史源码与探针，另记录当前版本、四种布局、实际事件及上下文；正常交互重批信任，不手写记录或 bypass。没有真实证据时不勾选、不归档。
 2. 产品修改前加入持久离线 RED。使用实际生成命令和相同 cwd/input/执行 shell，覆盖两个事件、根/子目录、嵌套 Git/worktree、无 Git、近根隔离、中文空格、缺 helper/入口、空/坏/延迟/未关闭 stdin。
 3. 固定代码解码与规范根源码逐字节一致；参数白名单、命令长度低于 Windows cmd 限制、无绝对路径/假环境变量、无 stdin 预读。
 4. Windows 必测 Codex 等价 cmd raw_arg 与 PowerShell；显式 Git Bash 只作为 shell 检查，native POSIX 由 CI验证。
@@ -77,4 +82,8 @@ Codex 的 session cwd
 
 编码命令不便直接人工阅读，生成器与解码对照测试是审计入口。若用户不接受这种编码，应调整设计，而非默认为批准。命令长度与真实三种 shell 是合入门槛。
 
-部署与回滚都需正常重批信任；不自动操作信任记录。将生成器、配置、迁移及测试作为一个改动单元回滚，不删除用户 hook 或会话数据。保持 #591/#650 独立提交可追溯。任何 push、全局安装、发布或计费会话仍须单独授权。
+部署与回滚都需正常重批信任；不手写信任记录。将生成器、配置、迁移及
+测试作为一个改动单元回滚，不删除用户 hook 或会话数据。保持 #591/#650
+独立提交可追溯。2026-11-11 用户要求继续真实 0.167.1 宿主验收，范围为
+必要的最小会话，沿用当前认证、模型和 provider；不扩为 push、全局安装
+或发布。
