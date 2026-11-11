@@ -68,3 +68,12 @@ or suppressing the failure is not the proposal.
 The coordinator may decide whether to attempt the unchanged normal full gate
 again, retaining the original failed-gate evidence. This diagnostic does not
 perform or authorize a commit/full-suite retry and does not claim full passage.
+
+## Subsequent coordinator result
+
+The coordinator subsequently repeated the unchanged normal full commit gate.
+It passed: core401 /2 existing skips; CLI2149 /35 existing skips, including
+all17 warning tests. Commit9a9e4b65 was created. No timeout, concurrency,
+configuration, skip, assertion, channel source or warning test changed.
+This records a later complete pass and does not identify the original stall
+cause or turn it into the core seq-lock exception.

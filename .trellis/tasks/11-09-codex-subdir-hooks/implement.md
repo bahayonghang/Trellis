@@ -10,7 +10,7 @@
 - [x] dry-run/skip/备份/收据/幂等/卸载归属；只同步 .codex/hooks.json，保护三个既有差异脚本及其它配置。
 - [x] GREEN：cmd raw_arg 与 PowerShell 命令边界，固定源码等价、命令长度/白名单、EOF/坏 JSON/延迟/未关闭输入。Git Bash 不是原生 Linux。
 - [x] uv run --locked 下串行 lint/typecheck/lint:py/build/相关测试，真实 Python 3.9 compile、打包、构建后 init/update/no-op/uninstall；独立 review。
-- [ ] 单独检查 staged detect-changes 结果后，再显式 pathspec Conventional Commit，记录 #667；不能把检测/提交串成不经检查的一批。
+- [x] 单独检查 staged detect-changes（25 文件、58 符号、10 流程，HIGH 仍在批准范围）后，显式 pathspec 提交 9a9e4b65，记录 #667。完整 pre-commit 通过；首次失败及诊断另存，不改测试参数。
 - [ ] 实际 Codex 0.167.0 宿主四种布局验收。只有 0.167.1 时不冒充通过；做不到就代码/自动化完成后停止、不归档，不启动前置未满足的 replay/doctor，不动 verification-receipts。
 
 本轮指示覆盖旧计划“产品修改前必须真实/计费 RED”的顺序。不自动安装/降级

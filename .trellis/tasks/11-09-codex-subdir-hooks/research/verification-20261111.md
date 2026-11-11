@@ -105,4 +105,21 @@ was delayed/failed. This is not the core channel-sequence lock timeout.
 
 No source, timeout, skip or assertion was changed in response. Read-only
 diagnosis and an unchanged focused control are recorded separately. Final full
-pre-commit remains unresolved until a complete gate passes.
+pre-commit was unresolved at that point.
+
+## Full pre-commit attempt 2 and source commit
+
+After the unchanged focused 17/17 control and the isolated latency diagnostic,
+the same normal full commit gate passed without changing source/tests,
+timeouts, concurrency, configuration or skips: core 401 PASS / 2 existing
+SKIP; CLI 2149 PASS / 35 existing SKIP (95 files PASS / 1 existing SKIP).
+The CLI run took 214.88s. The original full-run failure cause remains unknown;
+the later pass does not erase the failure or prove the artificial delay was
+its cause. See precommit-warning-diagnostic-20261111.md.
+
+Source commit: `9a9e4b65 fix(codex): bootstrap hooks from nested working directories`.
+Before this explicit-pathspec commit, staged GitNexus detect-changes was
+inspected separately: 25 files / 58 symbols / 10 expected Codex/init/update
+flows, HIGH within the recorded approval. No channel source/test was modified.
+The specified real-host acceptance is still NOT RUN; task remains in_progress
+and unarchived, with replay/doctor not started.
