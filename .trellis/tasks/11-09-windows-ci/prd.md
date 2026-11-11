@@ -24,8 +24,11 @@
 ## Acceptance Criteria
 
 - [ ] 一个 PR 能触发 Linux 与 Windows 两个 job，并都为绿色。
-- [ ] 冒烟流程在中文/空格路径下通过。
-- [ ] 每个 skip 都列出原因；真实宿主（Claude Code / Codex）的冒烟测试不在 CI 范围内，并在文档中注明。
+- [x] 冒烟流程在中文/空格路径下通过（本机 Windows，Node 18.17/26.7，Python 3.9.25；远端矩阵尚待运行）。
+- [x] 每个 skip 都列出原因；真实宿主（Claude Code / Codex）的冒烟测试不在 CI 范围内，并在文档中注明。
+
+执行证据见 `research/verification.md`。本轮禁止 push，未获得 GitHub Actions
+双平台绿色结果，故保持 in_progress、不归档；本机通过不替代远端验收。
 
 ## Dependencies
 

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'packages/cli/**'
       - 'packages/core/**'
@@ -13,7 +13,7 @@ on:
       - '**/*.py'
       - '.github/workflows/ci.yml'
   pull_request:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'packages/cli/**'
       - 'packages/core/**'
@@ -26,17 +26,33 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ["18.17.0", "26.7.0"]
+        include:
+          - os: ubuntu-latest
+            shell: bash
+          - os: windows-latest
+            shell: pwsh
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Setup Node.js
+      # Build tools (including Vitest 4) require newer Node than the CLI floor.
+      # Build on the development runtime, then smoke the built CLI on both.
+      - name: Setup build Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "26.7.0"
 
       - name: Setup minimum supported Python
         uses: actions/setup-python@v7
@@ -44,9 +60,10 @@ jobs:
           python-version: "3.9"
 
       - name: Check Python 3.9 syntax
+        env:
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/trellis-pycache
         run: |
-          export PYTHONPYCACHEPREFIX="$RUNNER_TEMP/trellis-pycache"
-          git ls-files -z --recurse-submodules '*.py' | xargs -0 python -m py_compile
+          python -c "import py_compile, subprocess; files = subprocess.check_output(['git', 'ls-files', '-z', '--recurse-submodules', '*.py']).decode('utf-8').split('\0'); [py_compile.compile(name, doraise=True) for name in files if name]"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -57,12 +74,15 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck (core + cli)
+        if: matrix.node == '26.7.0'
         run: pnpm typecheck
 
       - name: Typecheck Python
+        if: matrix.node == '26.7.0'
         run: pnpm --filter @mindfoldhq/trellis lint:py
 
       - name: Lint (core + cli)
+        if: matrix.node == '26.7.0'
         run: pnpm lint
 
       # Build before test: integration tests spawn the real CLI via
@@ -71,15 +91,18 @@ jobs:
         run: pnpm build
 
       - name: Test (core + cli)
+        if: matrix.node == '26.7.0'
         run: pnpm test
 
       - name: Verify build output
         run: |
-          set -euo pipefail
-          test -d packages/core/dist
-          test -f packages/core/dist/index.js
-          test -f packages/core/dist/channel/index.js
-          test -f packages/core/dist/task/index.js
-          test -d packages/cli/dist
-          test -f packages/cli/dist/index.js
-          echo "Build verification passed"
+          python -c "from pathlib import Path; files = ['packages/core/dist/index.js', 'packages/core/dist/channel/index.js', 'packages/core/dist/task/index.js', 'packages/cli/dist/index.js']; missing = [name for name in files if not Path(name).is_file()]; assert not missing, missing; print('Build verification passed')"
+
+      - name: Setup CLI runtime Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # This exercises generated files and scripts, not Claude/Codex host sessions.
+      - name: Smoke built CLI in Chinese and space path
+        run: node packages/cli/test/ci-smoke.mjs
