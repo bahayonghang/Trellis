@@ -206,3 +206,40 @@ Published authorized Trellis dev and opened fork-local draft PR1. All four hoste
 ### Next Steps
 
 - Await explicit permission to create public bahayonghang/marketplace, publish existing1aa9b32 to trellis-reliability-v1, and point the marketplace submodule URL there; then validate actual fetch and fresh PR CI. All CI-gated tasks remain unarchived.
+
+
+## Session 6: Local reliability v1 closeout
+<!-- trellis-session: v=2 fp=b0170a02e902c9c5 -->
+
+**Date**: 2026-11-11
+**Task**: Local reliability v1 closeout
+**Package**: cli
+**Branch**: `dev`
+
+### Summary
+
+Completed the user-approved local-only reliability first version. All14 children and parent archived; the post-2026-10-09 cohort is16 completed archives plus the explicitly deferred verification-receipts planning task. No further publishing.
+
+### Main Changes
+
+- Updated the remaining three child PRDs and parent acceptance to the user-selected local-delivery scope, retaining the actual hosted checkout failures and not-run tests. No marketplace fork, submodule URL repair, push, PR update, merge or package release.
+- Separate archive commits: Windows CI2d4efc93, replay6c700c84, doctor7994943a, parentb65e0561. Used task.py archive with no-commit to inspect staged GitNexus before each normal explicit-path commit; no hook bypass.
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] All four archive commits passed full normal pre-commit: core401 pass/2 existing skips and CLI2239 pass/35 existing skips. Latest parent CLI gate194.57s; no test timeout/concurrency/skip/source changes.
+- [OK] Verified exact14-child archive JSON records, no active duplicates, completed parent and date cohort17=16 completed/archived+1 planning. Protected June tasks, verification-receipts, divergent mirrors and older archives unchanged.
+- [OK] Product/CI/runtime sources unchanged since e7583d64; explicitly reused committed lint/typecheck/build, Node18 and native Windows integration evidence. No new model calls or peripheral platform/window matrices.
+- [OK] Staged GitNexus before every archive: task documents only, no indexed symbol overlap. Final integration Markdown punctuation check passed.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Use the local first version for a period before starting verification-receipts brainstorming. Hosted/public use remains outside scope and would require repairing submodule distribution and real CI verification if later requested.
