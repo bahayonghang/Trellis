@@ -191,12 +191,20 @@ program
     "--tag <tag>",
     "npm dist-tag or version to install (default follows current channel: latest, beta, or rc)",
   )
-  .option("--dry-run", "Print the install command without running it")
+  .option(
+    "--dry-run",
+    "Report checkout detection and the planned upgrade without running it",
+  )
+  .option(
+    "--force-npm",
+    "Allow replacing a checkout link with the official npm package",
+  )
   .action(async (options: Record<string, unknown>) => {
     try {
       await upgrade({
         tag: options.tag as string | undefined,
         dryRun: options.dryRun as boolean,
+        forceNpm: options.forceNpm as boolean,
       });
     } catch (error) {
       console.error(

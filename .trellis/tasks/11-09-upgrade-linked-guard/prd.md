@@ -20,9 +20,11 @@
 
 ## Acceptance Criteria
 
-- [ ] 单元测试覆盖：checkout 运行 → 拒绝并给出提示；npm 全局安装 → 正常执行；显式参数 → 继续安装。
-- [ ] 在本机 `just install` 之后实测 `trellis upgrade --dry-run` 的输出符合预期。
-- [ ] 不引入新的依赖。
+- [x] 单元测试覆盖：checkout 运行 → 拒绝并给出提示；npm 全局安装 → 正常执行；显式参数 → 继续安装。
+- [x] 在本机 `just install` 之后实测 `trellis upgrade --dry-run` 的输出符合预期。
+- [x] 不引入新的依赖。
+
+执行证据见 `research/verification.md`；独立检查及真实 pre-commit 完成后再归档。
 
 ## Dependencies
 
