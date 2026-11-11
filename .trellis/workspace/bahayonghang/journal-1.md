@@ -243,3 +243,41 @@ Completed the user-approved local-only reliability first version. All14 children
 ### Next Steps
 
 - Use the local first version for a period before starting verification-receipts brainstorming. Hosted/public use remains outside scope and would require repairing submodule distribution and real CI verification if later requested.
+
+
+## Session 7: Verification receipts local V1 completion
+<!-- trellis-session: v=2 fp=8331e28b8493cff6 -->
+
+**Date**: 2026-11-11
+**Task**: Verification receipts local V1 completion
+**Package**: cli
+**Branch**: `dev`
+
+### Summary
+
+Implemented opt-in task verification receipts and completed its real strict local archive. All 17 tasks created since 2026-10-09 are completed and archived; no publication.
+
+### Main Changes
+
+- Added trusted argv checks, input fingerprints, durable receipts, manual acknowledgement and an early strict archive gate; preserved legacy lifecycle behavior.
+- Registered installed Python assets, synchronized dogfood twins, and archived verification-receipts in separate commit 91ddc078.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4963f82cff2618fe46f3deffacd15275f331caab` | feat(cli): add opt-in task verification receipts |
+
+### Testing
+
+- [OK] Normal feature and archive hooks: core 401 pass / 2 existing skips; CLI 2270 pass / 35 existing skips, including 29 installed verifier cases.
+- [OK] Actual own-task active and archived verification: all 16 checks pass; final live receipt fresh and accepted. Final PRD edit correctly invalidated the prior attempt before re-verification.
+- [OK] Lint/typecheck, Python 3.9.25, strict test TS, build, package inspection and built Windows CLI smoke passed. Python lint retains 68 existing warnings.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Requested local task cohort is complete. Keep delivery local; no push or package publication.
