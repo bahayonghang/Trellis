@@ -7,6 +7,15 @@
 再决定是否投入规范/验收增强。本任务是父任务，只承载需求集、任务地图、
 跨子任务验收和最终集成复核，本身不作为实现目标。
 
+## 本轮交付范围（2026-11-11 调整）
+
+用户要求“不用发布，保持本地”，并进一步确认“首版本地收尾，收据功能继续后置”。
+本轮以本地实现、质量门和已有原生 Windows 集成证据验收；远端双平台绿色
+不再作为本轮归档条件。已发生的 PR CI checkout 失败保持真实记录，不写成
+通过，也不创建 marketplace fork、改 submodule URL 或继续 push。
+`verification-receipts` 保持 planning，待首版实际使用一段时间后再启动。
+本轮最终集成证据见 `research/local-integration-closeout-20261111.md`。
+
 ## 文档评估结论（2026-11-09 对照本仓库源码核对）
 
 采纳（已在源码中确认问题存在）：
@@ -52,10 +61,10 @@
 
 ## 跨子任务验收
 
-- [ ] 所有子任务完成并归档。
-- [ ] 在 `dev` 上 `pnpm lint && pnpm typecheck && pnpm build && pnpm test` 通过，新增失败与 `fork-baseline` 记录的基线已知失败可区分。
-- [ ] Windows CI 与 Linux CI 均为绿色。
-- [ ] 端到端冒烟（Windows，原生 PowerShell）：`trellis init` → 修改 workflow.md → 增加一个平台 → `trellis update --dry-run` 仍识别修改 → 建任务 A、再建 B 后 A 仍是当前任务 → 归档 A，其它已暂存内容不变 → 从 `src/` 子目录启动 Codex，hook 能注入上下文。
+- [x] 所有 14 个首版子任务完成并归档；逐项核对实际 task.json，未按目录缺失推断完成。
+- [x] 在 `dev` 上 `pnpm lint && pnpm typecheck && pnpm build && pnpm test` 通过，新增失败与 `fork-baseline` 记录的基线已知失败可区分。复用源码未变的静态/构建证据，归档提交继续执行正常完整测试。
+- [x] 交付并复核 Windows/Linux CI 矩阵配置及本机双 Node 版本冒烟。远端绿色验收按本轮仅本地要求移出范围；实际 checkout 失败及未运行的远端测试保留为已知限制。
+- [x] 端到端冒烟（Windows，原生 PowerShell）：`trellis init` → 修改 workflow.md → 增加一个平台 → `trellis update --dry-run` 仍识别修改 → 建任务 A、再建 B 后 A 仍是当前任务 → 归档 A，其它已暂存内容不变 → 从 `src/` 子目录启动 Codex，hook 能注入上下文。复用 `research/windows-integration-20261111.md`，当前产品源码与该记录输入一致。
 
 ## CRLF 子任务结果
 
@@ -74,7 +83,7 @@ ZCode 已使用项目根变量；OpenCode/Pi/OMP 是插件或扩展入口，不�
 
 - TL13 channel 权限档位、TL32 生命周期 hook 信任：仅在实际使用 channel 或打开不可信仓库时需要。
 - TL15/TL16/TL40 任务级 workflow 与派发策略：先用一段时间再决定。
-- TL17–TL19 可执行验收：已建独立任务 `verification-receipts`（P2，需 brainstorm）。
+- TL17–TL19 可执行验收：已建独立任务 `verification-receipts`（P2，需 brainstorm）。用户本轮再次明确确认继续后置，保持 planning、不实施、不归档。
 - TL20–TL25、TL38 OpenSpec 桥接：外部依赖重、收益未验证；首版完成并实际使用后再评估。
 - TL26–TL31、TL34–TL37、TL39：持续完善类，按真实需求再开任务。
 - TL02 包名/scope 改造与 npm 发布：只在决定公开发布时做。
