@@ -56,3 +56,7 @@ CRLF failure. The same scoped commit is retried after the date stabilized;
 no clock manipulation, source/archived-task fix, assertion relaxation, new skip,
 timeout increase or hook bypass is used. The midnight edge remains unfixed
 because unrelated/archived work is outside this request's allowed scope.
+
+Full pre-commit retry PASS: implementation commit 2e5e4f56, core 401 passed / 2 existing skips, CLI 2076 passed / 35 existing skips. No test/source change or bypass was used to resolve the midnight failure.
+
+Archive gate attempt failed one existing hook-stdin non-object case: expected code 0, received null after expected diagnostic. The harness has a 5-second kill timer; the failed run did not capture killed/signal metrics, so the exact transient cause is unknown. This invocation inherited system CPython 3.14.7 rather than the documented uv Python 3.9 environment. In the correct CPython 3.9.25 environment, all 26 unchanged hook-stdin tests passed (including the three diagnoses). Archive commit is rerun with uv run --locked per script-conventions.md; no code, deadline, skip or assertion changes. This does not establish a diagnosed/resolved Python 3.14 defect.
