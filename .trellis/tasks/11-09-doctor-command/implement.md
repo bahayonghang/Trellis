@@ -24,5 +24,8 @@ exact portable-body comparison with three known Python prefixes. Full source
 commit gate passed unchanged at e7583d64 after explicit CRITICAL scope approval:
 core401 /2 existing skips and CLI2239 /35 existing skips. The initial unrelated
 update teardown timeout and unchanged controls are retained in research; its
-cause remains unknown. Remote CI and local Node18 smoke remain unverified;
-no product/project repair or doctor host/model call was performed.
+cause remains unknown. Additional actual Node18.17.0 built-CLI/schema smoke now
+passes five diagnostic cases, three schema rejection controls and full fixture/
+Git byte invariance per run; see research/node18-smoke-20261111.md. Remote CI
+remains unverified; no product/project repair or doctor host/model call was
+performed.

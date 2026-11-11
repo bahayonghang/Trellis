@@ -21,6 +21,6 @@
   "children": [],
   "parent": "11-09-fork-reliability-v1",
   "relatedFiles": [],
-  "notes": "Implementation/review and normal full pre-commit passed at e7583d64 after explicit CRITICAL scope approval. Initial unrelated update teardown timeout and unchanged controls retained. Remote CI and local Node18 doctor smoke unverified; keep unarchived.",
+  "notes": "Implementation/review and normal full pre-commit passed at e7583d64 after explicit CRITICAL scope approval. Initial unrelated update teardown timeout and unchanged controls retained. Actual Node18.17.0 built-CLI/schema smoke now passed with five diagnostic cases, three strict-schema rejection controls and per-run full fixture/Git byte invariance. Remote CI unverified; keep unarchived.",
   "meta": {}
 }

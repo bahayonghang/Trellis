@@ -93,3 +93,41 @@ Completed native Codex 0.167.1 acceptance, archived its child at 956cc7bc, and c
 - Run remote matrix when publishing is authorized; retain windows-ci, replay, doctor and parent unarchived until their actual CI acceptance is met.
 - Do not start verification-receipts until reliability v1 is complete and has been used for a period.
 - Two generated Temp fixtures remain after automatic approval review rejected cleanup with only blocked by policy; no alternate deletion route attempted.
+
+
+## Session 3: Fork reliability v1: Node18 verification and archive audit
+<!-- trellis-session: v=2 fp=792292bfc7d79413 -->
+
+**Date**: 2026-11-11
+**Task**: Fork reliability v1: Node18 verification and archive audit
+**Package**: cli
+**Branch**: `dev`
+
+### Summary
+
+Closed the doctor-specific local Node18.17.0 verification gap and audited all 14 reliability children:11 archived,3 awaiting actual dual-platform CI. No source changes or archived-task edits; publishing question pending under the existing no-push instruction.
+
+### Main Changes
+
+- Used pinned ephemeral Node18.17.0 with existing CPython3.9.25; no repository/global dependency change.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e7583d64` | feat(doctor): add read-only local reliability diagnostics |
+
+### Testing
+
+- [OK] Actual built doctor CLI plus packaged schema passed5 diagnostic cases and3 schema rejection controls; every run preserved full fixture/Git bytes and confidence stayed at most probed.
+- [OK] Confirmed retained old fixture absolute paths and exact parent child inventory. GitHub dev workflow read returned No commit found for the ref dev; no remote CI pass claimed.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- CI-dependent windows-ci, replay and doctor plus planning parent remain unarchived until actual acceptance is met; no push without explicit changed authorization.
+- Keep verification-receipts untouched until v1 completion plus a period of real use.
+- Original two policy-blocked fixtures remain. New Node18 fixture trellis-doctor-node18-67a5008f5987 also remains after one contained cleanup rejection: blocked by policy; no workaround or retry.
