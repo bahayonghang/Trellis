@@ -26,3 +26,8 @@
 
 The user requested continuing local validation on 2026-11-11. Windows CI code
 is implemented, but its remote-green AC remains open; do not claim otherwise.
+
+The later user instruction on 2026-11-11 changes this closeout to local-only.
+The PRD now accepts the completed local suite plus matrix inclusion; hosted
+execution is outside this round. Preserve failed-checkout/not-run evidence and
+archive only against these explicit revised criteria, never as a CI-green claim.
