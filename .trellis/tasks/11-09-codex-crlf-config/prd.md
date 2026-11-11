@@ -19,9 +19,17 @@ Windows 下文件是 CRLF 行尾时，`trellis update` / init 不得丢失用户
 
 ## Acceptance Criteria
 
-- [ ] LF 和 CRLF 两种输入下，`model` 与 `model_reasoning_effort` 都保留（有测试）。
-- [ ] OMP 文件的正文在 update 前后逐字节相同（标题处理除外，以实际预期为准）。
-- [ ] 测试在 Windows CI 中运行。
+- [x] LF 和 CRLF 两种输入下，`model` 与 `model_reasoning_effort` 都保留（有测试）。
+- [x] OMP 输出符合用户确认的实际预期：保留模板 LF 规范化现状，正文文本未额外改写；不声称 CRLF 输入原始字节不变。
+- [x] 测试已纳入 Windows CI 的常规测试选择，并在本机原生 Windows 通过；远端 Actions 尚未运行，不声称远端通过。
+
+## 复现与用户确认
+
+实际 built CLI update 未能复现 #656 的模型键丢失或重复标题。观察到 OMP
+正文因 CRLF→LF 从 2405 变成 2351 字节。用户明确选择：
+“按‘未能复现’分支归档，明确保留并记录 LF 规范化现状”。因此调整上述正文
+验收口径，仅补回归、不改生产正则；保留具体哈希和前后字节证据。
+详见 `research/reproduction.md`，完成独立检查及 pre-commit 后归档。
 
 ## Dependencies
 

@@ -57,6 +57,13 @@
 - [ ] Windows CI 与 Linux CI 均为绿色。
 - [ ] 端到端冒烟（Windows，原生 PowerShell）：`trellis init` → 修改 workflow.md → 增加一个平台 → `trellis update --dry-run` 仍识别修改 → 建任务 A、再建 B 后 A 仍是当前任务 → 归档 A，其它已暂存内容不变 → 从 `src/` 子目录启动 Codex，hook 能注入上下文。
 
+## CRLF 子任务结果
+
+`codex-crlf-config` 实际 update **未能复现** #656 的模型键丢失或 OMP
+重复标题。LF/CRLF agent 两个模型键均保留；OMP 正文随当前 LF 模板发生
+CRLF→LF 规范化，原始字节不相同。用户明确接受保留并记录这一现状，按
+未能复现分支补测试后归档，不移植生产正则。远端 Windows CI 仍未验证。
+
 ## 其它平台启动路径后续核验（#667 规划盘点）
 
 `11-09-codex-subdir-hooks/research/host-0167.md` 记录了相对入口同形状清单：Claude、Cursor、Copilot、Gemini、Qoder、CodeBuddy、Droid、Trae、Kiro、Snow 共 10 个平台。只确认模板命令含相对路径，未复现这些宿主的 cwd 行为，不能直接判为同一缺陷。本轮只修 Codex，不自动扩成跨平台启动器重构或创建新任务。
