@@ -31,7 +31,7 @@ User approved creating this lightweight test-only repair task and then explicitl
 - [x] All four files are audited; safe passthrough cases without exact timing assumptions are documented rather than needlessly rewritten.
 - [x] No production changes, new dependencies, Vitest retries/skips, timeout increases, preload hooks or environment-stripping workarounds.
 - [x] Focused tests, strict TypeScript for changed tests, actual Python 3.9 execution and all five required quality gates pass; an independent check confirms no weakened contracts.
-- [ ] Baseline/spec evidence is updated, protected document hashes still match, and the isolated repair passes the real pre-commit hook.
+- [x] Baseline/spec evidence is updated, protected document hashes still match, and the isolated repair passes the real pre-commit hook.
 
 ## Out of scope
 

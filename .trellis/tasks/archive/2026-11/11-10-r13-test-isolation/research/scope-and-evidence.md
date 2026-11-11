@@ -87,3 +87,38 @@ skips (CLI 178.18 seconds). Six protected hashes and the five original index
 entries remain exact; repair changes remain unstaged. LSP was unavailable, not
 reported clean. The incomplete initial gate log and checker setup errors are
 explicitly diagnosed in the independent report; none were hidden by a retry.
+
+## Main-session commit and archive handoff
+
+User approved the scoped commit and archive. Work commit `7998b571`
+(`test(fs): isolate retry contracts from native rename timing`) contains exactly
+16 repair paths. The staged GitNexus gate reported seven symbols, zero indexed
+affected processes and LOW risk; graph limits for test callbacks still apply.
+The real pre-commit hook passed on its first repair attempt: core 401 passed /
+2 existing skips; CLI 2049 passed / 35 existing skips (165.37 seconds).
+`lint-staged` ran but had no matching source files, so the separately verified
+strict test-inclusive tsc, ESLint and Prettier evidence remains necessary.
+
+Post-commit checks matched all six protected worktree hashes and five original
+index entries. Only the five original planner paths remain staged; the Codex
+diagnostic remains untracked. No production/platform files were committed.
+Archive uses the supported `--no-commit` option so its actual moved/staged scope
+can be checked with GitNexus before the separate normal-hook bookkeeping commit.
+No push, amend, hook bypass, Codex session or journal commit is part of this repair.
+
+`task.py archive 11-10-r13-test-isolation --no-commit` moved this task to
+`.trellis/tasks/archive/2026-11/11-10-r13-test-isolation`; metadata is completed
+and records the work commit. Only this task's two manifests were updated for
+their moved research reference. The source task is absent and the session no
+longer has an active-task pointer (so `task.py current` returns 1 as expected).
+The original reliability parent remains at 7/14; Codex stays in planning.
+Six protected document hashes and all five original index entries were checked
+again after the move. Archive staging/commit is restricted to this task's exact
+source and destination; no unrelated archive, planner or journal is included.
+
+**Archive commit blocked:** the first normal-hook archive attempt failed two
+unmodified configuration/init tests at their existing 30 s / 10 s deadlines.
+All 84 R13 tests passed in that run. A single unchanged two-file diagnostic
+passed 62 tests, but the full-suite timing cause is unresolved. No commit retry
+or timeout/worker/hook adjustment followed. HEAD remains `7998b571`; the move
+is staged, not committed. See `research/archive-blocker.md` before continuing.

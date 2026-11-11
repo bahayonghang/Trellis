@@ -12,7 +12,10 @@
 - [x] Run serially with `uv run --locked`: `pnpm lint`, `pnpm typecheck`, `pnpm --filter @mindfoldhq/trellis lint:py`, `pnpm build`, `pnpm test`. Do not race destructive build/typecheck setup with full tests.
 - [x] Run an independent trellis-check with fresh focused evidence and all contract/preservation checks. LSP tools were unavailable/inconclusive; strict changed-test TypeScript, ESLint, real CPython 3.9.25 and fresh focused/full gates passed. See research/independent-check.md.
 - [x] Verify six protected worktree hashes and no production diff. Keep the pre-existing five staged planning files and untracked diagnosis out of the repair commit; do not discard them.
-- [ ] Main-session staged GitNexus scope gate, real-hook Conventional Commit, normal scoped archive. No push/amend/bypass. Codex plan/journal remain separate bookkeeping after this task.
+- [x] Main-session staged GitNexus scope gate: 16 repair paths, seven symbols, LOW risk; protected index entries unchanged.
+- [x] Real-hook Conventional Commit `7998b571`: core 401/2 existing skips, CLI 2049/35 existing skips. No push/amend/bypass. Codex plan/journal remain separate bookkeeping after this task.
+- [x] Archive only this completed repair with `task.py archive --no-commit` to `archive/2026-11/11-10-r13-test-isolation`; staged only its source/destination paths, excluding protected planning documents.
+- [ ] Complete the archive bookkeeping commit: the first real-hook attempt was rejected by unrelated 30 s configuration-test and 10 s init-hook timeouts. No retry/bypass followed. Two-file diagnostic control passed 62 tests but does not resolve the full-suite timing cause. See `research/archive-blocker.md`; a wider repair requires scope review.
 
 ## Tools and boundaries
 
