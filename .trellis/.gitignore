@@ -1,6 +1,9 @@
 # Developer identity (local only)
 .developer
 
+# Local hook configuration (may contain credentials)
+hooks.local.json
+
 # Current task pointer (each dev works on different task)
 .current-task
 

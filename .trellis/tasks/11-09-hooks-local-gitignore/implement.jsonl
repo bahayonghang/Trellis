@@ -1,0 +1,4 @@
+{"file":".trellis/spec/cli/backend/commands-update.md","reason":"Plan/apply, skip/dry-run and hash contracts"}
+{"file":".trellis/spec/cli/backend/filesystem-safety.md","reason":"Symlink boundaries and additive writes"}
+{"file":".trellis/spec/cli/unit-test/integration-patterns.md","reason":"Init/update regression tests"}
+{"file":".trellis/spec/cli/unit-test/conventions.md","reason":"Isolation and assertions"}

@@ -35,6 +35,11 @@ import { compareVersions } from "../utils/compare-versions.js";
 import { toPosix } from "../utils/posix.js";
 import { setupProxy } from "../utils/proxy.js";
 import { emptyTaskJson } from "../utils/task-json.js";
+import {
+  addLocalHooksIgnoreRule,
+  planLocalHooksGitignore,
+  TRELLIS_GITIGNORE_PATH,
+} from "../utils/local-hooks-gitignore.js";
 
 // Import templates for comparison
 import {
@@ -954,8 +959,16 @@ async function collectTemplateFiles(
     }
   }
 
+  // Plan only after update.skip filtering; never read or replace a linked path.
+  if (files.has(TRELLIS_GITIGNORE_PATH)) {
+    const gitignore = planLocalHooksGitignore(cwd);
+    if (gitignore === null) files.delete(TRELLIS_GITIGNORE_PATH);
+    else files.set(TRELLIS_GITIGNORE_PATH, gitignore);
+  }
+
   // Apply python3→python replacement for Windows consistency with init-time writes
   for (const [filePath, content] of files) {
+    if (filePath === TRELLIS_GITIGNORE_PATH) continue;
     files.set(filePath, replacePythonCommandLiterals(content));
   }
 
@@ -1016,6 +1029,8 @@ function analyzeChanges(
         const currentHash = computeHash(existingContent);
 
         if (
+          (relativePath === TRELLIS_GITIGNORE_PATH &&
+            newContent === addLocalHooksIgnoreRule(existingContent)) ||
           (storedHash && storedHash === currentHash) ||
           (!storedHash &&
             isKnownUntrackedTemplate(relativePath, existingContent)) ||
@@ -2729,6 +2744,10 @@ export async function update(options: UpdateOptions): Promise<void> {
     }
   }
   if (filesToHash.size > 0) {
+    // Init deliberately excludes mixed-ownership ignore files from the receipt.
+    if (hashes[TRELLIS_GITIGNORE_PATH] === undefined) {
+      filesToHash.delete(TRELLIS_GITIGNORE_PATH);
+    }
     updateHashes(cwd, filesToHash);
   }
 

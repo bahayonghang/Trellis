@@ -20,9 +20,12 @@
 
 ## Acceptance Criteria
 
-- [ ] `git check-ignore .trellis/hooks.local.json` 在新 init 和旧项目 update 之后都命中。
-- [ ] init/update 连续运行两次，`.gitignore` 内容不变。
-- [ ] CRLF 和带 BOM 的 `.gitignore` 测试通过。
+- [x] `git check-ignore .trellis/hooks.local.json` 在新 init 和旧项目 update 之后都命中。
+- [x] init/update 连续运行两次，`.gitignore` 内容不变。
+- [x] CRLF 和带 BOM 的 `.gitignore` 测试通过。
+
+详见 `research/upstream-648.md` 与 `research/verification.md`。独立检查通过，
+完整 pre-commit 通过后归档；用户显式否定规则继续生效。
 
 ## Dependencies
 

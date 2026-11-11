@@ -9,6 +9,27 @@
 Applies to: `commands/update.ts`, `commands/uninstall.ts`, `utils/*`,
 `core/channel/**`, and the shipped Python under `templates/trellis/scripts/`.
 
+## Mixed-ownership local hooks ignore rule
+
+`utils/local-hooks-gitignore.ts` plans `.trellis/.gitignore` for init and update.
+Use `lstat` on the workflow directory and ignore leaf before reading: links,
+dangling links and nonregular entries are opaque and only this ignore addition
+is skipped with a warning. Do not disable supported linked-workflow operations.
+
+For a regular existing file, insert only a missing `hooks.local.json` rule after
+the UTF-8 BOM and before user content. Preserve comments, all existing rule
+bytes, CRLF/LF and later negation precedence, including force reinit. Never send
+the user's ignore content through Python-command rewriting or whole-file
+template conflict replacement. Update must apply `update.skip` before the plan
+reads this path, and dry-run must not write. A read-only tracked-file probe may
+advise `git rm --cached`; it must not change index bytes.
+
+Tests: `test/commands/hooks-local-gitignore.integration.test.ts` exercises real
+Git ignore matching, init/update idempotence, BOM/CRLF/custom-rule preservation,
+skip/dry-run and tracked index bytes. `test/utils/local-hooks-gitignore.test.ts`
+covers real directory links/junctions and a controlled file-symlink lstat
+boundary on systems without file-link privileges; no platform test skip is added.
+
 ---
 
 ## 1. Atomic writes — never truncate a state file in place
