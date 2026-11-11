@@ -28,6 +28,7 @@ this checkout's shims under the existing npm global prefix.
   afterwards still resolved trellis/tl to this fork's shims.
 - Independent review: no blockers or edits. Lint, typecheck, 18/18 focused
   tests, Prettier and diff checks passed independently.
-- Full pre-commit result: pending implementation commit.
+- Full pre-commit PASS for implementation commit `a3d58384`: core 401 passed /
+  2 existing skipped; CLI 2057 passed / 35 existing skipped. No bypass or retry.
 
 No official npm upgrade was executed, and no remote push was made.
