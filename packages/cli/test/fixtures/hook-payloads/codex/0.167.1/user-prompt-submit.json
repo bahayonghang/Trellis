@@ -1,0 +1,19 @@
+{
+  "fixtureFormat": 1,
+  "kind": "capture",
+  "harness": "codex",
+  "cliVersion": "0.167.1",
+  "event": "UserPromptSubmit",
+  "payload": {
+    "session_id": "replay-codex-parent",
+    "turn_id": "replay-parent-turn",
+    "transcript_path": "/hook-replay/home/codex/parent.jsonl",
+    "cwd": "/hook-replay/repo",
+    "hook_event_name": "UserPromptSubmit",
+    "model": "gpt-6.1-sol",
+    "permission_mode": "default",
+    "prompt": "This is a bounded hook input capture. Do not read files or run shell, edit, search, network, or other tools. Spawn exactly one default subagent using fork_turns none and task_name payload_capture. Its only task is to reply CAPTURED without tools or further delegation. Then wait for it and reply CAPTURED."
+  },
+  "stdinTruncated": false,
+  "redactions": ["session_id", "turn_id", "transcript_path", "cwd"]
+}
