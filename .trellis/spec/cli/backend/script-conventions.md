@@ -10,6 +10,70 @@ All workflow scripts target **Python 3.9+** for cross-platform compatibility (ma
 
 ---
 
+## Checkout Python Environment
+
+The root `pyproject.toml` is a non-packaged, standard-library-only development
+environment. `.python-version` pins Python 3.9; `requires-python = ">=3.9"`
+keeps the supported-runtime floor unchanged. Commit `uv.lock`, but never `.venv/`.
+Do not add Python build metadata or duplicate pnpm-managed basedpyright here.
+
+Run `uv sync --locked`, then use `uv run python ...`, `uv run pnpm test`, and
+`uv run git commit ...` to put the checkout interpreter on subprocess PATH.
+An unwrapped system `python` is not selected by `pyrightconfig.json` and need
+not match the pin. Check with `uv run python --version`; actual Python 3.9
+`py_compile` and runtime tests are separate from static version checking.
+This setup applies only to developing this checkout; generated user projects
+still require Python 3.9+ and do not require uv.
+
+## SessionStart JSON stdout after workspace selection
+
+### 1. Scope / Trigger
+
+Codex/Copilot SessionStart hooks emit Unicode context as JSON. A non-Windows
+host may explicitly set `PYTHONIOENCODING=cp1252`; the common Windows encoding
+helper alone does not protect that output.
+
+### 2. Signatures
+
+`configure_project_encoding(project_dir: Path) -> None` is an internal hook
+helper called only after an owned Trellis workspace has been selected.
+
+### 3. Contracts
+
+The owned hook stdout must support UTF-8 JSON regardless of the initial locale.
+Keep ordinary UTF-8 output bytes, JSON schema and decoded Unicode context stable.
+Do not globally broaden `common.configure_encoding` or change unrelated stdin
+and stderr behavior on Unix as part of this hook-output repair. Outside a valid
+workspace, hooks remain silent without this output configuration side effect.
+
+### 4. Validation & Error Matrix
+
+| Condition | Expected |
+| --- | --- |
+| Owned workspace, cp1252 stdout | Valid UTF-8 SessionStart JSON with Unicode context |
+| Owned workspace, normal UTF-8 stdout | Existing byte-compatible output |
+| No owned workspace | Existing silent/no-context behavior |
+| Optional common helper unavailable | Existing fail-open behavior; no invented context |
+
+### 5. Good/Base/Bad Cases
+
+Good: parsed context retains `子任务🚀` under cp1252. Base: ordinary-root output
+matches the current HEAD protocol bytes. Bad: special-case the test away on
+Linux, rely on CI forcing UTF-8 globally, or use ASCII escaping merely to avoid
+the existing stdout compatibility requirement.
+
+### 6. Tests Required
+
+Keep generated Codex/Copilot non-UTF-8 subprocess tests and ordinary-root byte
+compatibility controls. Verify no-project silence and root-selection isolation;
+use actual Python 3.9 runtime evidence as well as syntax/type checks.
+
+### 7. Wrong vs Correct
+
+Wrong: assume the Windows-only common helper configured Linux stdout.
+Correct: configure the selected hook's JSON output stream at its ownership
+boundary, preserving common's existing platform contract and other protocols.
+
 ## Directory Structure
 
 ```
@@ -404,7 +468,12 @@ The single source of truth for all JSON file operations. Replaces 8 duplicated `
   leaves the existing file intact instead of truncated. On failure the tmp
   file is unlinked; a `BaseException` (e.g. `KeyboardInterrupt`) is re-raised,
   while `OSError`/`IOError` from the write itself are caught and return
-  `False` as before. This matters for `task.json`: a truncated file reads
+  `False` as before. Only `os.replace` retries Windows (`sys.platform ==
+  "win32"`) `PermissionError`: 10 retries at 10, 20, …, 100 ms (550 ms total).
+  Other platforms/errors fail immediately; an interrupt during backoff still
+  cleans the temp and re-raises. Runtime fault-injection coverage is in
+  `test/scripts/io.integration.test.ts`; keep the dogfood twin byte-identical.
+  This matters for `task.json`: a truncated file reads
   back as `None` from `read_json`, which makes the task silently vanish from
   `task.py list`. See [Filesystem Safety](./filesystem-safety.md#1-atomic-writes--never-truncate-a-state-file-in-place).
 
@@ -626,9 +695,20 @@ a `.current-task` fallback or a Python hook directory.
   `task.json` and `prd.md`. Missing or whitespace-only descriptions are stored
   as `""` and emit a warning on stderr.
 - Unless `--no-start` is passed, `task.py create` best-effort activates the new
-  task for the current session when a context key is available. This writes
-  `.trellis/.runtime/sessions/<session-key>.json` and prints both the activated
-  task and `Source: session:<key>` on stderr.
+  task when a context key is available and no unfinished task would be displaced.
+  `task_utils.active_task_conflict(task_dir: Path, repo_root: Path) -> str | None`
+  inspects the existing resolver read-only, without single-session fallback.
+  A missing/stale pointer, an archive location, or status `completed` / `done`
+  permits activation. Planning, in-progress, custom/unknown statuses and missing,
+  malformed or unreadable metadata preserve the existing pointer byte-for-byte.
+  Canonically equivalent paths are the same task, not a conflict.
+- Successful activation writes `.trellis/.runtime/sessions/<session-key>.json`
+  and prints the activated task and `Source: session:<key>` on stderr. On a
+  conflict create still succeeds with a new `planning` task, reports the kept
+  task and prints a platform-native `python` (Windows) / `python3` (elsewhere)
+  `task.py start "<new-task>"` command. It does not change the old task metadata
+  or sibling sessions. Explicit start remains unchanged: no `--switch` flag,
+  no extra refusal, and the usual status/branch/context/hook behavior.
 - `task.py create --no-start` must not change any session pointer, even when a
   context key is available. It prints a skip notice and leaves existing session
   runtime state untouched.
@@ -731,7 +811,9 @@ a `.current-task` fallback or a Python hook directory.
 | Condition | Required behavior |
 |-----------|-------------------|
 | `create` without description or with whitespace-only description | Warns on stderr; stores `task.json.description == ""`; initial `prd.md` goal falls back to `TBD.` |
-| `create` with context key, default mode | Task files exist; session runtime points at the new task; activation and source are printed; no `.current-task` |
+| `create` with context key, no unfinished task | Task files exist; session runtime points at the new task; activation and source are printed; no `.current-task` |
+| `create` with unfinished task or unknown/unreadable metadata | New task is `planning`; old pointer and metadata unchanged; kept-task and explicit start guidance on stderr |
+| `create` with malformed exact runtime pointer and a sibling session | Activate new task for the exact session; never adopt or change the sibling |
 | `create --no-start` with context key | Task files exist; existing session runtime is unchanged; skip notice is printed; no `.current-task` |
 | `create` without context key | Task files exist; no `.runtime`; no `.current-task` |
 | `create` with `.codex/` and no `codex.dispatch_mode` override (default `auto`) | Task files exist; `implement.jsonl` and `check.jsonl` exist and are empty |
@@ -771,6 +853,9 @@ a `.current-task` fallback or a Python hook directory.
 
 ##### 5. Good/Base/Bad Cases
 
+- Good: creating B while A is `in_progress` leaves A active and B `planning`;
+  explicit `start B` switches normally after planning review. Treating unreadable
+  A metadata as completion is bad: absence of evidence must not discard context.
 - Good: Cursor provides `conversation_id`; resolver writes
   `cursor_<conversation-id>.json` and hook/plugin output includes the
   session source (statuslines shorten it to `[session]`).
@@ -791,8 +876,13 @@ a `.current-task` fallback or a Python hook directory.
 
 - Regression tests for `create` with a context key writing session runtime and
   surfacing the session source.
+- `test/scripts/task-create-keep-active.integration.test.ts` runs the real CLI
+  in temporary Git repos: compare pointer/old-metadata bytes for planning,
+  in-progress, custom and unreadable states; verify new-task planning status,
+  explicit start/status/hooks, terminal/stale/archived activation, aliases,
+  malformed exact pointers, sibling isolation and no-identity behavior.
 - Regression tests for `create --no-start` preserving an existing session
-  pointer.
+  pointer, including an otherwise replaceable terminal task.
 - Regression tests for blank and whitespace-only `--description` warning and
   normalized `task.json.description`.
 - Regression tests for `create` without a context key producing no runtime or
@@ -825,10 +915,15 @@ print(f"Created task: {dir_name}")
 if args.no_start:
     print("Skipped session activation (--no-start)", file=sys.stderr)
 elif resolve_context_key():
-    active = set_active_task(task_path, repo_root)
-    if active:
-        print(f"Activated task for this session: {active.task_path}", file=sys.stderr)
-        print(f"Source: {active.source}", file=sys.stderr)
+    previous = active_task_conflict(task_dir, repo_root)
+    if previous:
+        print(f"Kept active task for this session: {previous}", file=sys.stderr)
+        # Print platform-native `task.py start "<new-task>"` guidance.
+    else:
+        active = set_active_task(task_path, repo_root)
+        if active:
+            print(f"Activated task for this session: {active.task_path}", file=sys.stderr)
+            print(f"Source: {active.source}", file=sys.stderr)
 ```
 
 ###### Wrong
@@ -1722,13 +1817,93 @@ wide scope.
 | Helper | Source | Purpose |
 |---|---|---|
 | `safe_trellis_paths_to_add(repo_root, task_name=None)` | `templates/trellis/scripts/common/safe_commit.py:safe_trellis_paths_to_add` | Path whitelist for `add_session.py` — current developer's journal files + index.md, and (when `task_name` is passed) ONLY the current task dir. Callers MUST pass `task_name` so parallel-window dirty task dirs never leak into the session commit (#303). |
-| `safe_archive_paths_to_add(repo_root, task_name=None, modified_children=None)` | `templates/trellis/scripts/common/safe_commit.py:safe_archive_paths_to_add` | Path whitelist for `task.py archive` — archive subtree + explicitly-passed `modified_children` task dirs (parent/child relationship updates). Callers MUST pass `task_name`. |
+| `safe_archive_paths_to_add(repo_root, task_name=None, modified_children=None, archived_task_dir=None)` | `templates/trellis/scripts/common/safe_commit.py:safe_archive_paths_to_add` | Path whitelist for `task.py archive` — exact archive destination + explicitly-passed `modified_children` task dirs (parent/child relationship updates). Callers MUST pass `task_name` and `archived_task_dir`. |
 | `safe_git_add(paths, repo_root)` | `templates/trellis/scripts/common/safe_commit.py:safe_git_add` | Plain `git add -- <paths>`; never `-f`. Returns `(success, used_force=False, stderr)` |
 | `print_gitignore_warning(paths)` | `templates/trellis/scripts/common/safe_commit.py:print_gitignore_warning` | Single source of truth for the "ignored by .gitignore" warning, including the AI-defense negative example |
 | `get_session_auto_commit(repo_root)` | `templates/trellis/scripts/common/config.py:get_session_auto_commit` | Reads `session_auto_commit` from `.trellis/config.yaml` (default `True`) |
 
 Callers using this contract: `add_session.py:_auto_commit_workspace` and
 `task_store.py:_auto_commit_archive` (invoked from `task.py archive`).
+
+### Scenario: Archive destination scope (#630, selective port of #649)
+
+#### 1. Scope / Trigger
+
+`task.py archive` must preserve edits in every other archived task, including
+already-staged and partially-staged work. A pathspec-scoped commit still leaks
+unrelated edits when the pathspec names the whole archive root.
+
+#### 2. Signatures
+
+```python
+def safe_archive_paths_to_add(
+    repo_root: Path,
+    task_name: str | None = None,
+    modified_children: list[str] | None = None,
+    archived_task_dir: Path | None = None,
+) -> list[str]
+def _auto_commit_archive(
+    task_name: str,
+    repo_root: Path,
+    archived_task_dir: Path,
+    modified_children: list[str] | None = None,
+) -> bool
+```
+
+#### 3. Contracts
+
+`cmd_archive` passes the destination `Path` returned by the move through
+`_auto_commit_archive` into the helper. With `task_name`, stage only that
+existing destination plus explicitly modified child task directories. Convert
+the destination to a repo-relative POSIX pathspec; never recompute its month
+from the clock. Source deletes remain the caller's `git rm --cached`
+responsibility. The commit uses the same precise paths, including the source
+only when it was tracked (#629). Legacy no-`task_name` behavior is unchanged;
+live archive callers supply both task name and destination.
+
+#### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+| --- | --- |
+| Another archived task has staged / unstaged / partially-staged edits, and source code is already staged | Exclude both paths from the commit; preserve each HEAD blob, index entry, working bytes and porcelain status |
+| Source task was tracked | Commit its source deletions and exact archive destination together |
+| Source task was never tracked | Commit destination paths only; no moved-away source pathspec (#629) |
+| Parent archive unlinks children | Include explicitly modified child task directories with the move |
+| Destination omitted or absent in scoped helper mode | Never fall back to the archive root; only explicit children remain eligible |
+| `session_auto_commit: false` | Move/update task files, but leave HEAD and all index entries unchanged |
+
+#### 5. Good / Base / Bad Cases
+
+- Base: archiving task-a commits its move and completed metadata.
+- Good: archived task-b's partially-staged PRD and staged source-code work
+  retain their exact index/worktree split after archiving task-a.
+- Bad: staging `.trellis/tasks/archive` captures task-b's unrelated PRD edits.
+
+#### 6. Tests Required
+
+`test/scripts/task-archive-scope.integration.test.ts` uses real temporary Git
+repositories and the platform-native Python command (no interpreter-dependent
+skips). Assert exact changed paths with rename detection disabled; snapshot
+unrelated HEAD blob IDs, index modes/blob IDs, working bytes and status before
+and after. Cover all three staging states alongside staged source work,
+never-tracked task commits, disabled auto-commit, child unlinking, omitted or
+absent destination, supplied historical month and legacy helper behavior.
+`task-archive.integration.test.ts` retains tracked source deletion, active-task
+scope, pre-staged source preservation and failed-commit visibility coverage.
+
+#### 7. Wrong vs Correct
+
+```python
+# Wrong: a known task does not authorize staging every archived task.
+paths.append(f"{DIR_WORKFLOW}/{DIR_TASKS}/{DIR_ARCHIVE}")
+
+# Correct: use the concrete destination already returned by the move.
+if archived_task_dir is not None and archived_task_dir.is_dir():
+    paths.append(archived_task_dir.relative_to(repo_root).as_posix())
+```
+
+Selective upstream design: Huanyi Xie (`xiehuanyi`),
+[mindfold-ai/Trellis#649](https://github.com/mindfold-ai/Trellis/pull/649).
 
 ### Anti-pattern: AI-invented `git add -f .trellis/`
 

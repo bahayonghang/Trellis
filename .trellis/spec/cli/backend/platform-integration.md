@@ -794,6 +794,106 @@ foo: ["session-start.py", "inject-shell-session-context.py"],
 
 ---
 
+## Scenario: Bounded Python Hook Input and Support Assets
+
+### 1. Scope / Trigger
+
+All Python hook entrypoints must tolerate hosts that leave stdin open. The
+canonical runtime reader is `templates/shared-hooks/trellis_hook_input.py`,
+installed beside shared hooks, Codex/Copilot SessionStart, Claude's optional
+statusline, and Snow's context writer. It has no Trellis root/common dependency.
+Non-hook CLI document intake (`add_session.py`) is deliberately outside this contract.
+
+### 2. Signatures
+
+```python
+def read_hook_json() -> dict[str, Any]: ...
+def read_hook_stdin(*, is_complete: Callable[[str], bool] = _is_complete_json) -> str: ...
+def parse_hook_json(raw: str, *, diagnose: bool = True) -> dict[str, Any]: ...
+```
+
+```typescript
+getSharedHookScripts(): HookScript[]; // registered entrypoints only
+getSharedHookSupportFiles(): HookScript[]; // canonical runtime dependencies
+getSharedHookScriptsForPlatform(platform: SharedHookPlatform): HookScript[];
+// Last API returns support assets FIRST, then that platform's registered hooks.
+```
+
+### 3. Contracts
+
+- One total read deadline defaults to **2 seconds**. Optional
+  `TRELLIS_HOOK_STDIN_TIMEOUT_SECONDS` accepts finite seconds in **(0, 10]**;
+  absent/invalid settings use 2 seconds. No per-chunk deadline reset.
+- EOF returns immediately. A complete single JSON document can finish before
+  EOF; object validation rejects non-object payloads. UTF-8 is accumulated across
+  arbitrary byte boundaries; there is no new payload-size cap or prefix parse.
+- Pipe reads use a daemon, raw `os.read`, and a bounded read-ahead queue. Do not
+  use buffered stdin in that worker: shutdown can wait on its lock. Windows
+  additionally uses `PeekNamedPipe` before reading available bytes: a pending raw
+  read can stall later subprocesses inheriting the pipe, even with a duplicated
+  descriptor. POSIX may block the raw daemon. No POSIX-only `select` on Windows
+  pipes, and no `os._exit` workaround without demonstrated shutdown evidence.
+- Failures return `{}` / empty raw input without changing successful stdout.
+  `TRELLIS_HOOK_INPUT_DEBUG=1` enables category-only stderr diagnostics; default
+  paths remain silent and never log payloads.
+- Snow uses the same wrapper-tolerant document extractor for completion and
+  final parsing, preserving the first/last-brace recovery rule. Completion tests
+  the validated document, not dict truthiness: wrapped `{ }` must finish too.
+  Incremental parse attempts are silent; final validation reports diagnostics.
+- Support assets are **not events**: exclude them from `SharedHookName`,
+  `SHARED_HOOKS_BY_PLATFORM`, and `getSharedHookScripts`. The platform getter
+  prepends them so both `collectSharedHooks` and ZCode's direct consumer ship
+  them. Snow's independent `getAllHooks` prepends the same canonical bytes.
+- Platform maps must put the helper before **all** importers, including
+  Codex/Copilot custom SessionStart and optional Claude statusline. Init/update
+  hash ownership, uninstall and ablation still use the existing map pipeline;
+  no parallel installer. Pi receives no Python hooks.
+- Source type resolution uses `pyrightconfig.json.extraPaths` pointing at
+  `packages/cli/src/templates/shared-hooks`; installed hooks import their sibling.
+  Source-import probes must emulate the entrypoint directory on `sys.path` and
+  materialize the support asset, not add import suppressions/fallback readers.
+
+### 4. Validation & Error Matrix
+
+| Input / setting | Fail-soft behavior / debug category |
+| --- | --- |
+| Held-open empty/incomplete stream reaches deadline | empty result; `timeout` |
+| EOF with no non-whitespace content / interactive terminal | empty result; `empty` |
+| Malformed JSON at EOF | `{}`; `invalid-json` |
+| Complete non-object JSON | `{}`; `non-object` |
+| Pipe/decoder failure, including truncated UTF-8 | empty result; `read-error` |
+| Non-finite, non-positive, >10-second or nonnumeric override | use 2 seconds; `invalid-timeout` |
+| Object arrives after 0.5 seconds, or multi-megabyte Unicode object | preserve full input and normal output |
+
+### 5. Good / Base / Bad Cases
+
+Good: the host writes a complete object and keeps stdin open; context is emitted
+and native Python 3.9 exits. Base: a normal closed pipe keeps the prior protocol
+output. Bad: copying only an importing entrypoint, registering the helper as an
+event, or hiding a blocked read behind a tiny 0.2-second fixed timeout.
+
+### 6. Tests Required
+
+`test/scripts/hook-stdin.integration.test.ts` exercises all eight real installed
+entrypoints: held-open pipes, delayed valid input, closed/open stdout parity,
+empty/bad/non-object diagnostics, huge input and Snow wrapping. Its registry-wide
+asset test verifies canonical sibling bytes and map order, including ZCode,
+Snow and optional statusline. `hook-input-reader.integration.test.ts` verifies
+native exit, default/invalid deadlines, Unicode digest integrity, EOF immediacy,
+read errors and post-read inherited-stdin subprocess startup. Keep registry-wide
+configure/collect parity, init/update hash tracking and uninstall tests passing.
+Never hide failures with test retries/skips or a larger deadline budget.
+
+### 7. Wrong vs Correct
+
+Wrong: `json.loads(sys.stdin.read())`, or a worker holding `sys.stdin.buffer.read()`
+until EOF, or a fixed-size prefix treated as a complete JSON payload.
+
+Correct: `from trellis_hook_input import read_hook_json`, then
+`hook_input = read_hook_json()`, with the canonical sibling installed first.
+
+---
+
 ## Scenario: Extension-Backed Platform Support
 
 ### 1. Scope / Trigger
@@ -2070,7 +2170,111 @@ The same rule applies to every other hook that's positioned as "repeated reminde
 
 ### CWD Robustness
 
-The hook uses `find_trellis_root()` to walk up from CWD until it finds `.trellis/`, so it works when the terminal is in a subdirectory (monorepo package, etc.) or when sub-agent spawn inherits a drifted CWD.
+All eight Python platform hook entrypoints use the standalone shared root
+walker described below. This includes optional Claude statusline, Snow and the
+Codex/Copilot private SessionStart hooks; it does not change root policy in
+`common.paths`, `common.active_task`, or JS/TS host integrations.
+
+#### Scenario: Nearest Valid Python Hook Workspace (#650)
+
+##### 1. Scope / Trigger
+
+Any Python platform hook that selects a Trellis workspace must share the same
+marker predicate. A nested Git repository must not hide the enclosing workspace,
+and a home `.trellis/spec-inject` cache must not become a project root.
+
+##### 2. Signatures
+
+```python
+# templates/shared-hooks/trellis_hook_paths.py — stdlib only, no common imports
+find_trellis_root(start: str | Path) -> Path | None
+```
+
+##### 3. Contracts
+
+- Resolve the starting path and inspect it plus every ancestor, including the
+  filesystem root. Select the first `.trellis` **directory** containing a
+  `workflow.md` **file**, `config.yaml` **file**, or `scripts` **directory**.
+- Ignore Git boundaries. Skip empty/cache-only, file-valued, broken and
+  wrong-type markers. An `OSError` inspecting the `.trellis` directory skips
+  only that candidate, not the remaining ancestors. Inspect the three internal
+  marker alternatives independently: an `OSError` for `workflow.md` must not
+  hide an accessible `config.yaml` file or `scripts` directory at the same root.
+  Only advance to a parent when no alternative validates the child. Start-path
+  resolution failures return `None` without output, never falling back to a
+  noncanonical lexical walk.
+- A symlink/junction `.trellis` belongs to its containing workspace, not the
+  target's parent. Keep the existing realpath context containment, including
+  the linked workflow store as a second permitted base.
+- Share the walker, **not hint precedence**: shared SessionStart selects its
+  first nonempty platform env hint, otherwise payload/default cwd;
+  Codex/Copilot use payload/default cwd; workflow uses payload-or-process cwd;
+  shell tries payload then process cwd; native subagent tries payload then
+  process cwd while legacy subagent uses its existing payload/default choice;
+  Snow uses payload, `SNOW_CWD`, then process cwd; statusline uses process cwd.
+  Keep existing Windows shell-path normalization at its existing callers.
+- No root means exit 0, empty stdout/stderr, **before** encoding setup,
+  context/env persistence, shell tickets, Snow logs or statusline Git queries.
+  Bounded stdin decoding remains independent and unchanged.
+- A marker-only partial root is still the selected root: never fall through to
+  a parent or borrow a global `common` package. Consumers requiring task runtime
+  check for local `scripts/common/__init__.py` and `active_task.py` before
+  importing them (a namespace directory alone can lose to a global package); missing
+  dependencies degrade at that root. Do not blanket-catch new runtime failures.
+- Install `trellis_hook_paths.py` through `getSharedHookSupportFiles`, before
+  importers on all twelve Python-hook platforms and optional statusline.
+  It is a support asset, never a fifth event; Snow and ZCode's direct provider
+  must receive the same canonical bytes. No parallel installer or Pi hooks.
+
+##### 4. Validation & Error Matrix
+
+| Layout | Required result |
+| --- | --- |
+| Nested `.git` directory or worktree file | Nearest valid Trellis workspace, regardless of Git |
+| No Git repository | Same workspace/context selection |
+| Closer valid marker | Child wins; no parent task context |
+| Closer invalid marker or inaccessible `.trellis` directory | Continue to next valid ancestor |
+| Child `workflow.md` stat fails, but `config.yaml` is a file | Select child, not parent |
+| Both child file-marker stats fail, but `scripts` is a directory | Select child, not parent |
+| Both child file-marker stats fail and no other alternative validates | Continue to next valid ancestor |
+| No valid marker | Empty output, exit 0, zero runtime/env/log side effects |
+| Valid but partially installed child | Fail soft there; no parent/global runtime import |
+| Linked `.trellis` | Containing workspace selected; legitimate linked context readable |
+| Context/pointer escaping allowed realpath bases | Never inject escaped content |
+
+##### 5. Good / Base / Bad Cases
+
+Base: a normal generated root preserves its existing hook protocol bytes.
+Good: a vendor Git checkout still receives the enclosing task's actual PRD.
+Bad: stopping at `.git`, accepting any `.trellis`, or retrying a parent when a
+valid child lacks its runtime.
+
+##### 6. Tests Required
+
+`test/scripts/hook-root.integration.test.ts` executes installed-map entrypoints
+with complete shipped runtimes and session pointers. Assert actual Claude
+PreToolUse/native Codex SubagentStart PRD selection, all eight root/no-root
+paths, typed marker alternatives, partial-install/global-import isolation,
+no-root stream/subprocess side effects and ordinary-root protocol controls.
+The worktree-vs-HEAD byte comparison is a compatibility smoke at review time,
+not a frozen historical regression oracle; independent PRD/root/envelope assertions
+remain authoritative after HEAD advances. Test private SessionStart Unicode output
+with a non-UTF-8 process stream too, not just a forced UTF-8 test environment.
+Use an actual Windows junction / POSIX directory symlink without added skips;
+mock filesystem-root predicates only to avoid writing to a real drive root.
+Use isolated stdlib `Path` predicate fault injection for inaccessible directories
+and individual marker errors. Assert that a valid sibling alternative keeps the
+child selected, paired with a no-valid-alternative control selecting the parent.
+Verify built init/update/hash receipts, intentional deletion preservation,
+uninstall ownership and npm archive contents for the support dependency.
+
+##### 7. Wrong vs Correct
+
+Wrong: `if (candidate / '.git').exists(): return candidate`, or testing only
+`(candidate / '.trellis').is_dir()`.
+
+Correct: `root = find_trellis_root(existing_hint)`; return silently on `None`,
+then load only that selected root's local runtime and preserve the event schema.
 
 ZCode hook commands must also make the script path itself CWD-robust. Use the ZCode project-root placeholder in `.zcode/config.json`, for example `{{PYTHON_CMD}} "${ZCODE_PROJECT_DIR}/.zcode/hooks/inject-workflow-state.py"`, rather than `{{PYTHON_CMD}} .zcode/hooks/inject-workflow-state.py`. The Python hook's `find_trellis_root()` only runs after Python opens the script; a cwd-relative command can fail before the hook starts if ZCode launches from a nested directory such as `.github/docs/...`.
 
@@ -2326,3 +2530,84 @@ Note this is *only* about `{{…}}` placeholders. The separate `python3` → `py
 | #71                           | Qoder            | Skills (like Codex/Kiro)                       | Skills with YAML frontmatter; Trae was dropped (IDE-only, no deterministic invocation trigger) |
 | feat/v0.5.0-beta              | All platforms (13 at the time; 21 today) | Unified template architecture | Common templates + shared hooks + `createTemplateReader()` factory                    |
 | `04-21-bootstrap-onboard-gap` | n/a              | Three-branch init dispatch + joiner onboarding | `.developer` file as per-checkout signal; documents the `handleReinit` two-point wiring        |
+
+## Scenario: Portable Codex hook commands (#667)
+
+### 1. Scope / Trigger
+
+Codex starts project hook commands in the session/turn cwd. Relative script
+entries fail before Python can discover a workspace. Only UserPromptSubmit and
+SubagentStart use this Codex bootstrap; no other platform/event is added.
+
+### 2. Signatures
+
+- `templates/codex:getCodexHookBootstrapSource(): string`
+- `templates/codex:buildCodexHookCommand(script: typeof CODEX_HOOK_SCRIPTS[number]): string`
+- `configurators/codex:planCodexHooksUpgrade(existingContent, desiredContent): CodexHooksUpgradePlan`
+- Plan kind is `unchanged`, `migrate`, or `manual`; manual retains the original
+  content and supplies a reason. The planner has no filesystem or trust writes.
+
+### 3. Contracts
+
+The encoded Python source starts with the exact canonical
+`shared-hooks/trellis_hook_paths.py` bytes, followed by fixed dispatch code.
+Only `.codex/hooks/inject-workflow-state.py` and
+`.codex/hooks/inject-subagent-context.py` may execute. The same process adds the
+selected hook directory to its import path and runs the entry as `__main__`.
+No stdin reads, cwd changes, project-root environment variables or dependencies
+are added. Partial nearest workspaces never borrow an outer hook or helper.
+
+The command is `{{PYTHON_CMD}} -X utf8 -c "<constant decoder>" <readable script>`.
+Base64 provides consistent shell quoting; it executes only versioned source.
+The final script token preserves the existing uninstall ownership contract.
+Command length must stay below cmd's 8191-character limit. Normal Codex trust
+review is still required when commands change; automation does not grant trust.
+
+### 4. Validation & Error Matrix
+
+| Input | Result |
+| --- | --- |
+| Exact old python/python3/py -3 Trellis command under its known event | Replace only that command token; preserve every other byte/field/order. |
+| User command, removed handler/event or already-current command | Keep unchanged, without adding defaults or blessing user content in hash repairs. |
+| Invalid JSON, uncertain shape, ambiguous command token | Manual; original file and update receipt remain unchanged even with force. |
+| Trellis entry with `commandWindows` or `command_windows` | Manual; both are real 0.167.0 Windows override fields. |
+| Manual plan with explicit create-new | Write a generated `.new` candidate only; never overwrite the original or its receipt. |
+| update.skip / dry-run | Skip before project-config reads / write no project bytes. |
+| Missing nearest entry or runtime helper / unsupported script argument | Silent exit; do not search an outer workspace. |
+
+### 5. Good / Base / Bad Cases
+
+Base: root and subdirectory commands inject the same task breadcrumb/PRD.
+Good: Chinese/space paths, non-Git projects and nested real worktrees resolve
+their nearest valid workspace. Bad: force-overwriting a damaged or custom
+hooks.json would discard user configuration; manual review keeps it intact.
+
+### 6. Tests Required
+
+`codex-hook-launcher.integration.test.ts` executes actual generated commands with
+the 0.167.0 raw cmd /C convention and pwsh on Windows, native sh on POSIX. Assert
+actual additionalContext, canonical decode equality, Python 3.9 compilation,
+argument whitelist, partial-root isolation and bounded/unchanged stdin behavior.
+Git Bash is not native Linux evidence. Pure and init/update tests cover exact
+command-token edits, overrides, deletion, custom bytes, dry-run, skip, backup,
+receipt and no-op behavior. Existing uninstall scrubbers must retain user hooks.
+These are shell/automation results, never proof of a real Codex host session.
+
+### 7. Wrong vs Correct
+
+Wrong: overwrite hooks.json from the default template on update or force reinit.
+Correct: apply the narrow proven command plan and retain manual/custom entries;
+emit only the original two events when creating a new configuration.
+
+During init, write a migrated hooks plan through the existing `writeFile`
+conflict/recording path without sending its user bytes through template
+rendering again. A Windows `python3` replacement must change only the proven
+owned command, never a custom hook command or unknown JSON string. Fresh
+defaults still use the normal template map. Force/skip reinit tests assert the
+exact migrated/original CRLF bytes and the corresponding preserved/new receipt.
+
+Init's actual-write receipt capture has one Codex-specific protection: when
+this invocation selected Codex and did not write hooks.json, preserve its
+preexisting hooks hash after `initializeHashes`. Never create a missing claim,
+preserve an unselected platform, or restore the old hash after a safe migration
+actually wrote the file. This is local init wiring, not a global hash API mode.

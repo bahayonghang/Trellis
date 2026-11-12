@@ -1,0 +1,27 @@
+{
+  "focusedChangedTests": [],
+  "currentIncludingRegression": [
+    {
+      "code": 2345,
+      "file": "D:/Documents/Code/Agents/Trellis/packages/cli/test/regression.test.ts",
+      "message": "Argument of type '{ sessionID: string; }' is not assignable to parameter of type 'null | undefined'."
+    },
+    {
+      "code": 2345,
+      "file": "D:/Documents/Code/Agents/Trellis/packages/cli/test/regression.test.ts",
+      "message": "Argument of type '{ sessionID: string; }' is not assignable to parameter of type 'null | undefined'."
+    }
+  ],
+  "headRegressionControl": [
+    {
+      "code": 2345,
+      "file": "D:/Documents/Code/Agents/Trellis/packages/cli/test/regression.test.ts",
+      "message": "Argument of type '{ sessionID: string; }' is not assignable to parameter of type 'null | undefined'."
+    },
+    {
+      "code": 2345,
+      "file": "D:/Documents/Code/Agents/Trellis/packages/cli/test/regression.test.ts",
+      "message": "Argument of type '{ sessionID: string; }' is not assignable to parameter of type 'null | undefined'."
+    }
+  ]
+}

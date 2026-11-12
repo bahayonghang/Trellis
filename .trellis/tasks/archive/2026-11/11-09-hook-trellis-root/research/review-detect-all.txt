@@ -1,0 +1,38 @@
+
+  GitNexus Detect Changes (1.6.12)
+warning: in the working copy of '.trellis/tasks/11-09-hook-trellis-root/check.jsonl', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of '.trellis/tasks/11-09-hook-trellis-root/implement.jsonl', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of '.trellis/tasks/11-09-hook-trellis-root/task.json', CRLF will be replaced by LF the next time Git touches it
+Changes: 20 files, 15 symbols
+Affected processes: 25
+Risk level: critical
+
+Changed symbols:
+  Function _find_trellis_dir → packages/cli/src/templates/claude/hooks/statusline.py
+  Function main → packages/cli/src/templates/claude/hooks/statusline.py
+  Function main → packages/cli/src/templates/codex/hooks/session-start.py
+  Function main → packages/cli/src/templates/copilot/hooks/session-start.py
+  Const SHARED_HOOK_SUPPORT_FILES → packages/cli/src/templates/shared-hooks/index.ts
+  Function main → packages/cli/src/templates/shared-hooks/inject-shell-session-context.py
+  Function find_repo_root → packages/cli/src/templates/shared-hooks/inject-subagent-context.py
+  Function _handle_codex_subagent_start → packages/cli/src/templates/shared-hooks/inject-subagent-context.py
+  Function _configure_hook_encoding → packages/cli/src/templates/shared-hooks/inject-subagent-context.py
+  Function main → packages/cli/src/templates/shared-hooks/inject-subagent-context.py
+  Function build_breadcrumb → packages/cli/src/templates/shared-hooks/inject-workflow-state.py
+  Function main → packages/cli/src/templates/shared-hooks/inject-workflow-state.py
+  Function _configure_hook_encoding → packages/cli/src/templates/shared-hooks/session-start.py
+  Function main → packages/cli/src/templates/shared-hooks/session-start.py
+  Function main → packages/cli/src/templates/snow/hooks/write-trellis-context.py
+
+Affected execution flows:
+  • Main → Diagnose_hook_input (6 steps) — changed: main
+  • Main → _string_value (5 steps) — changed: main, _handle_codex_subagent_start
+  • Main → _is_complete_json (5 steps) — changed: main
+  • Main → _read_text (4 steps) — changed: main
+  • Main → _normalize_task_ref (4 steps) — changed: main
+  • Main → Find_trellis_root (4 steps) — changed: main, _handle_codex_subagent_start, find_repo_root
+  • Main → _string_value (3 steps) — changed: main
+  • Main → _configure_hook_encoding (3 steps) — changed: main, _configure_hook_encoding, _handle_codex_subagent_start
+  • Main → _stdin_json_document (3 steps) — changed: main
+  • Main → Diagnose_hook_input (5 steps) — changed: main
+... and 15 more

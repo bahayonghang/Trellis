@@ -18,6 +18,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { collectPlatformTemplates } from "../../src/configurators/index.js";
 
 const TEMPLATE_SCRIPTS = path.resolve(
   __dirname,
@@ -28,10 +29,7 @@ const TASK_CONTEXT_PATH = path.join(
   "common",
   "task_context.py",
 );
-const HOOK_PATH = path.resolve(
-  __dirname,
-  "../../src/templates/shared-hooks/inject-subagent-context.py",
-);
+const HOOK_PATH = ".claude/hooks/inject-subagent-context.py";
 
 describe("task_context.py Python compatibility", () => {
   it("avoids the nested multiline f-strings rejected by Python 3.9-3.11 (#476)", () => {
@@ -66,12 +64,21 @@ function writeConfig(tmp: string, yaml: string): void {
  * root available as `REPO_ROOT`. Returns trimmed stdout. Throws with stderr
  * on non-zero exit. */
 function runHookProbe(tmp: string, code: string): string {
+  // Model the installed entrypoint and sibling support assets, not an isolated source file.
+  for (const [name, content] of collectPlatformTemplates("claude-code") ?? []) {
+    if (!name.startsWith(".claude/hooks/")) continue;
+    const dest = path.join(tmp, name);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, content, "utf-8");
+  }
+  const hookPath = path.join(tmp, HOOK_PATH);
   const probePath = path.join(tmp, "probe.py");
   const script = `
 import sys, importlib.util
 sys.argv[0] = ${JSON.stringify(path.join(tmp, "hook.py"))}
 REPO_ROOT = ${JSON.stringify(tmp)}
-spec = importlib.util.spec_from_file_location("h", ${JSON.stringify(HOOK_PATH)})
+sys.path.insert(0, ${JSON.stringify(path.dirname(hookPath))})
+spec = importlib.util.spec_from_file_location("h", ${JSON.stringify(hookPath)})
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 ${code}
@@ -84,7 +91,8 @@ ${code}
   if (r.status !== 0) {
     throw new Error(`probe failed (rc=${r.status}): ${r.stderr}`);
   }
-  return r.stdout;
+  // Text-mode stdout is CRLF on Windows; assertions compare LF content.
+  return r.stdout.replace(/\r\n/g, "\n");
 }
 
 function runConfigProbe(tmp: string, code: string): string {

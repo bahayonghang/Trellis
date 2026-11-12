@@ -1,0 +1,6 @@
+{"file":".trellis/spec/cli/unit-test/conventions.md","reason":"Fixture provenance and test isolation"}
+{"file":".trellis/spec/cli/unit-test/mock-strategies.md","reason":"Prefer real hook processes over mocks"}
+{"file":".trellis/spec/cli/unit-test/integration-patterns.md","reason":"Disposable project integration patterns"}
+{"file":".trellis/spec/cli/backend/platform-integration.md","reason":"Host protocol and generated hook source boundary"}
+{"file":".trellis/spec/cli/backend/filesystem-safety.md","reason":"Safe owned fixture paths and mirror preservation"}
+{"file":".trellis/spec/guides/cross-platform-thinking-guide.md","reason":"Python 3.9 and native Windows execution"}

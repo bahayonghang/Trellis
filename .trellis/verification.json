@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 1,
+  "commands": {
+    "receipts.ac01": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "vitest",
+        "run",
+        "test/scripts/task-verification.integration.test.ts",
+        "-t",
+        "AC01"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "receipts.ac02": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "vitest",
+        "run",
+        "test/scripts/task-verification.integration.test.ts",
+        "-t",
+        "AC02"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "receipts.ac03": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "vitest",
+        "run",
+        "test/scripts/task-verification.integration.test.ts",
+        "-t",
+        "AC03"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "receipts.ac04": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "vitest",
+        "run",
+        "test/scripts/task-verification.integration.test.ts",
+        "-t",
+        "AC04"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "receipts.ac05": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "vitest",
+        "run",
+        "test/scripts/task-verification.integration.test.ts",
+        "-t",
+        "AC05"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "receipts.ac06": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "vitest",
+        "run",
+        "test/scripts/task-verification.integration.test.ts",
+        "-t",
+        "AC06"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "receipts.ac07": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "vitest",
+        "run",
+        "test/scripts/task-verification.integration.test.ts",
+        "-t",
+        "AC07"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "receipts.ac08": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "vitest",
+        "run",
+        "test/scripts/task-verification.integration.test.ts",
+        "-t",
+        "AC08"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "receipts.ac09": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "vitest",
+        "run",
+        "test/scripts/task-verification.integration.test.ts",
+        "-t",
+        "AC09"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "receipts.ac10": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "vitest",
+        "run",
+        "test/scripts/task-verification.integration.test.ts",
+        "-t",
+        "AC10"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "quality.lint": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "lint"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "quality.types": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "typecheck"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "quality.python": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "lint:py"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "quality.test-types": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "--strict",
+        "--target",
+        "ES2022",
+        "--module",
+        "ESNext",
+        "--moduleResolution",
+        "bundler",
+        "--esModuleInterop",
+        "--skipLibCheck",
+        "test/scripts/task-verification.integration.test.ts"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "quality.build": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "build"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    },
+    "quality.package": {
+      "argv": [
+        "uv",
+        "run",
+        "--locked",
+        "pnpm",
+        "--filter",
+        "@mindfoldhq/trellis",
+        "exec",
+        "npm",
+        "pack",
+        "--dry-run",
+        "--ignore-scripts",
+        "--json"
+      ],
+      "expectedExit": 0,
+      "timeoutSeconds": 300
+    }
+  }
+}

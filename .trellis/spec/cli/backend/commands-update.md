@@ -72,10 +72,25 @@ Note that `force` / `skipAll` / `createNew` are mutually exclusive in spirit but
 
 Platforms are auto-discovered by directory existence in `cwd`. There is one exception: if `commands/update.ts:needsCodexUpgrade` returns true (legacy Trellis tracked `.agents/skills/` but no `.codex/` exists yet), `commands/update.ts:update` passes `extraPlatforms: new Set(["codex"])` to force Codex template collection so the upgrade can create `.codex/`.
 
-After collection, `collectTemplateFiles` runs two final passes:
+After collection, `collectTemplateFiles` runs three final passes:
 
 1. `update.skip` filtering via `commands/update.ts:loadUpdateSkipPaths` — drops paths matching the `update.skip` list in `.trellis/config.yaml`. **Bypassed** when the update is a breaking release with `recommendMigrate` (`breakingBypass`); see "Migration Trigger Semantics".
-2. `configurators/shared.ts:replacePythonCommandLiterals` is applied to every value so init-time and update-time bytes are byte-identical on the same OS. This is the load-bearing step that keeps idempotency working — see Common Pitfalls.
+2. `.trellis/.gitignore` uses `utils/local-hooks-gitignore.ts:planLocalHooksGitignore`
+   only after skip filtering. Existing files retain all user bytes; the only
+   addition is a missing positive `hooks.local.json` rule, before user rules so
+   later negations retain precedence. BOM and the existing CRLF/LF convention
+   survive. An exact additive result is auto-updatable even without a template
+   hash; init deliberately excludes this mixed-ownership path from new receipts.
+   Linked/nonregular workflow or ignore paths warn and omit only this file from
+   the plan. Other supported linked-workflow operations are unaffected.
+3. `configurators/shared.ts:replacePythonCommandLiterals` is applied to values
+   except `.trellis/.gitignore`, whose user comments and rules must retain their
+   exact bytes. Other init-time and update-time rendered bytes remain identical.
+
+The ignore planner performs a read-only Git tracked-path probe even on no-op
+updates. A tracked `.trellis/hooks.local.json` produces `git rm --cached --
+.trellis/hooks.local.json` advice; Trellis never changes the index automatically.
+Dry-run may report this advice but writes neither the rule nor any other file.
 
 ### 2. Whole-file workflow.md update and AGENTS.md managed-block merge
 
@@ -403,3 +418,15 @@ What you should test when extending update:
 | Block-merge change to `workflow.md` / `AGENTS.md` | At least one test asserting both "user prose preserved" and "managed block updated" |
 
 When a test reaches into `getAllMigrations()` or `getMigrationsForVersion`, it's exercising the boundary with `migrations/index.ts` — keep those assertions narrow (e.g., "this manifest's safe-file-delete fires") so they don't break every time the manifest list grows.
+
+## Codex command-only hook migration
+
+After normal template skip filtering, `analyzeChanges` delegates only
+`.codex/hooks.json` to `planCodexHooksUpgrade`. A proven command-only result is
+an auto-update with normal backup and receipt refresh. User-only/deleted/current
+custom content is left out of template hash-repair buckets; it is not a pristine
+template merely because the narrow plan has no action. Manual files are shown
+for review, but force skips them and create-new writes only a generated candidate.
+Manual originals and receipts remain unchanged. Other paths retain the normal
+classification. See [portable Codex contract](./platform-integration.md#scenario-portable-codex-hook-commands-667)
+for signatures, override aliases, error matrix and required tests.

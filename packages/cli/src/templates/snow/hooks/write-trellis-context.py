@@ -29,40 +29,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# Force UTF-8 on Windows consoles (cp936/cp1252 otherwise corrupt Chinese paths).
-if sys.platform.startswith("win"):
-    import io as _io
-
-    for _stream_name in ("stdin", "stdout", "stderr"):
-        _stream = getattr(sys, _stream_name, None)
-        if _stream is None:
-            continue
-        if hasattr(_stream, "reconfigure"):
-            try:
-                _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-            except Exception:
-                pass
-        elif hasattr(_stream, "detach"):
-            try:
-                setattr(
-                    sys,
-                    _stream_name,
-                    _io.TextIOWrapper(_stream.detach(), encoding="utf-8", errors="replace"),
-                )
-            except Exception:
-                pass
-
+from trellis_hook_input import parse_hook_json, read_hook_stdin
+from trellis_hook_paths import find_trellis_root as _find_repo_root
 
 DEFAULT_MAX_BYTES = 7500
 COMPACT_MAX_BYTES = 2800
-
-
-def _find_repo_root(start: Path) -> Path:
-    cur = start.resolve()
-    for candidate in [cur, *cur.parents]:
-        if (candidate / ".trellis").is_dir():
-            return candidate
-    return cur
 
 
 def _run(cmd: list[str], cwd: Path) -> str:
@@ -166,66 +137,33 @@ def _parse_active_task_path(current_out: str, repo: Path) -> Path | None:
     return None
 
 
-def _drain_stdin(timeout_sec: float = 0.5) -> str:
-    """Best-effort drain of host-piped hook context without hanging on TTY."""
-    chunks: list[str] = []
-    try:
-        if sys.stdin is None or sys.stdin.closed:
-            return ""
-        # Interactive terminal: do not block waiting for EOF.
-        if hasattr(sys.stdin, "isatty") and sys.stdin.isatty():
-            return ""
-
-        # Hosts (Snow) pipe JSON then close stdin. Manual CLI runs must not hang.
-        if sys.platform.startswith("win"):
-            import threading
-
-            box: list[str] = []
-
-            def _read() -> None:
-                try:
-                    box.append(sys.stdin.read())
-                except Exception:
-                    pass
-
-            t = threading.Thread(target=_read, daemon=True)
-            t.start()
-            t.join(timeout_sec)
-            return box[0] if box else ""
-
-        import select
-
-        while True:
-            ready, _, _ = select.select([sys.stdin], [], [], timeout_sec)
-            if not ready:
-                break
-            chunk = sys.stdin.read(4096)
-            if not chunk:
-                break
-            chunks.append(chunk)
-    except Exception:
-        pass
-    return "".join(chunks)
+def _drain_stdin() -> str:
+    """Use the shared deadline while preserving Snow's wrapper-tolerant parser."""
+    return read_hook_stdin(is_complete=lambda raw: bool(_stdin_json_document(raw)))
 
 
-def _parse_stdin_json(raw: str) -> dict[str, Any]:
+def _stdin_json_document(raw: str) -> str:
+    """Return a complete JSON document, including a wrapped empty object."""
     text = (raw or "").strip()
-    if not text:
-        return {}
     try:
-        data = json.loads(text)
-        return data if isinstance(data, dict) else {}
-    except Exception:
-        # Some hosts may wrap payload; try first JSON object substring.
+        json.loads(text)
+    except (ValueError, RecursionError):
+        # Some hosts wrap payloads; retain the original first/last brace policy.
         start = text.find("{")
         end = text.rfind("}")
-        if start >= 0 and end > start:
-            try:
-                data = json.loads(text[start : end + 1])
-                return data if isinstance(data, dict) else {}
-            except Exception:
-                return {}
-        return {}
+        if start < 0 or end <= start:
+            return ""
+        text = text[start : end + 1]
+        try:
+            json.loads(text)
+        except (ValueError, RecursionError):
+            return ""
+    return text
+
+
+def _parse_stdin_json(raw: str, *, diagnose: bool = True) -> dict[str, Any]:
+    # Completion and final parsing must agree without testing dict truthiness.
+    return parse_hook_json(_stdin_json_document(raw) or raw, diagnose=diagnose)
 
 
 def _resolve_mode(
@@ -588,6 +526,27 @@ def main() -> int:
         cwd_hint = stdin_ctx.get("cwd") if isinstance(stdin_ctx.get("cwd"), str) else None
         cwd = Path(cwd_hint or os.environ.get("SNOW_CWD") or os.getcwd())
         repo = _find_repo_root(cwd)
+        if repo is None:
+            return 0
+
+        # Force UTF-8 only after selecting a Trellis workspace.
+        if sys.platform.startswith("win"):
+            import io as _io
+            for _stream_name in ("stdin", "stdout", "stderr"):
+                _stream = getattr(sys, _stream_name, None)
+                if _stream is None:
+                    continue
+                if hasattr(_stream, "reconfigure"):
+                    try:
+                        _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+                    except Exception:
+                        pass
+                elif hasattr(_stream, "detach"):
+                    try:
+                        setattr(sys, _stream_name, _io.TextIOWrapper(_stream.detach(), encoding="utf-8", errors="replace"))
+                    except Exception:
+                        pass
+
         context = build_context(repo, mode=mode, stdin_ctx=stdin_ctx)
 
         log_dir = repo / ".snow" / "log"

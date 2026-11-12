@@ -1,0 +1,22 @@
+{
+  "command": "node C:/home/lyh/.npm-global/.cache/_npx/5e786f48223a616c/node_modules/gitnexus/dist/cli/index.js detect-changes --scope all --limit 300",
+  "index_refresh": "analyze --force --index-only (approved cached GitNexus 1.6.12)",
+  "changed_files": 28,
+  "changed_symbols": 23,
+  "affected_processes": 42,
+  "risk": "critical",
+  "scope_assessment": "Expected shared distribution, inventoried hook intake, and adapted fixture symbols. No unexpected product area identified.",
+  "coverage_limit": "Working-tree tracked diff only: untracked new helper/test files require the main session's final staged detection after independent review. No files were staged by implement agent.",
+  "named_changed_symbols": [
+    "collectCodexTemplates",
+    "collectCopilotTemplates",
+    "main (Claude statusline, Codex/Copilot/shared hook entrypoints)",
+    "SHARED_HOOK_SUPPORT_FILES",
+    "getSharedHookSupportFiles",
+    "getSharedHookScripts",
+    "getSharedHookScriptsForPlatform",
+    "_load_hook_input",
+    "_drain_stdin",
+    "_parse_stdin_json"
+  ]
+}

@@ -22,21 +22,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-# Hook hosts send UTF-8 JSON regardless of the process locale.
-_stdin_reconfigure = getattr(sys.stdin, "reconfigure", None)
-if callable(_stdin_reconfigure):
-    try:
-        _stdin_reconfigure(encoding="utf-8", errors="replace")
-    except (OSError, ValueError):
-        pass
-
-# Fix: Windows Python defaults to GBK encoding, which corrupts UTF-8
-# characters like the middle dot (·). Wrap stdout/stderr with UTF-8.
-if sys.platform == "win32":
-    for stream in (sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if callable(reconfigure):
-            reconfigure(encoding="utf-8", errors="replace")
+from trellis_hook_input import read_hook_json
+from trellis_hook_paths import find_trellis_root
 
 
 def _read_text(path: Path) -> str:
@@ -86,13 +73,9 @@ def _resolve_task_dir(trellis_dir: Path, task_ref: str) -> Path:
 
 
 def _find_trellis_dir() -> Path | None:
-    """Walk up from cwd to find .trellis/ directory."""
-    current = Path.cwd()
-    for parent in [current, *current.parents]:
-        candidate = parent / ".trellis"
-        if candidate.is_dir():
-            return candidate
-    return None
+    """Keep the statusline's .trellis-directory API and process-cwd hint."""
+    root = find_trellis_root(Path.cwd())
+    return root / ".trellis" if root is not None else None
 
 
 def _get_current_task(trellis_dir: Path) -> dict | None:
@@ -251,13 +234,26 @@ def _terminal_width() -> int | None:
 
 
 def main() -> None:
-    # Read Claude Code session JSON from stdin
-    try:
-        cc_data = json.loads(sys.stdin.read())
-    except (json.JSONDecodeError, ValueError):
-        cc_data = {}
+    cc_data = read_hook_json()
 
     trellis_dir = _find_trellis_dir()
+    if trellis_dir is None:
+        return
+    if not (trellis_dir / "scripts" / "common" / "active_task.py").is_file() or not (trellis_dir / "scripts" / "common" / "__init__.py").is_file():
+        return
+
+    _stdin_reconfigure = getattr(sys.stdin, "reconfigure", None)
+    if callable(_stdin_reconfigure):
+        try:
+            _stdin_reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            pass
+    if sys.platform == "win32":
+        for stream in (sys.stdout, sys.stderr):
+            reconfigure = getattr(stream, "reconfigure", None)
+            if callable(reconfigure):
+                reconfigure(encoding="utf-8", errors="replace")
+
     SEP = " \033[90m·\033[0m "
 
     # --- Trellis data ---

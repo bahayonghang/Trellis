@@ -75,7 +75,7 @@ python3 ./.trellis/scripts/task.py create-pr [name] [--dry-run]
 
 > Run `python3 ./.trellis/scripts/task.py --help` to see the authoritative, up-to-date list.
 
-**Current-task mechanism**: `task.py create` creates the task directory and (when session identity is available) auto-sets the per-session active-task pointer so the planning breadcrumb fires immediately. `task.py start` writes the same pointer (idempotent if already set) and flips `task.json.status` from `planning` to `in_progress`. State is stored under `.trellis/.runtime/sessions/`. If no context key is available from hook input, `TRELLIS_CONTEXT_ID`, or a platform-native session environment variable, there is no active task and `task.py start` fails with a session identity hint. `task.py finish` deletes the current session file (status unchanged). `task.py archive <task>` writes `status=completed`, moves the directory to `archive/`, and deletes any runtime session files that still point at the archived task.
+**Current-task mechanism**: `task.py create` creates the task directory and auto-sets the per-session active-task pointer when session identity is available and no unfinished task would be displaced. If an unfinished task is already active, create instead preserves it and prints `task.py start <new-task>` switching guidance. The new task stays `planning`; no pointer, a stale/deleted task, an archived task, or a task with status `completed` / `done` allows normal activation. Unknown or unreadable task metadata does not count as completion. `--no-start` always skips activation. Explicit `task.py start <task>` still switches normally without an extra flag and flips `task.json.status` from `planning` to `in_progress`. State is stored under `.trellis/.runtime/sessions/`. Without a context key from hook input, `TRELLIS_CONTEXT_ID`, or a platform-native session environment variable, create leaves session state untouched; `task.py start` cannot persist an active-task pointer and prints a session identity hint (degraded mode). `task.py finish` deletes the current session file (status unchanged). `task.py archive <task>` writes `status=completed`, moves the directory to `archive/`, and deletes any runtime session files that still point at the archived task.
 
 ### Workspace System
 
@@ -322,7 +322,7 @@ Goal: classify the request, get task-creation consent when a task is needed, and
 
 #### 1.0 Create task `[required · once]`
 
-Create the task directory only after task-creation consent. The command sets status to `planning`, writes `task.json`, creates a default `prd.md`, and auto-targets the new task when session identity is available:
+Create the task directory only after task-creation consent. The command sets status to `planning`, writes `task.json`, creates a default `prd.md`, and auto-targets the new task when session identity is available and no unfinished task would be displaced:
 
 ```bash
 python3 ./.trellis/scripts/task.py create "<task title>" --slug <name>
@@ -332,11 +332,11 @@ python3 ./.trellis/scripts/task.py create "<task title>" --slug <name>
 
 For task trees, create the parent task first and then create each child with `--parent <parent-dir>`. Do not start the parent just because children exist; start the child that owns the next independently verifiable deliverable.
 
-After this command succeeds, the per-turn breadcrumb auto-switches to `[workflow-state:planning]`, telling the AI to stay in planning.
+If create activates the new task, the per-turn breadcrumb switches to `[workflow-state:planning]`. If unfinished work remains active, its pointer and breadcrumb stay unchanged. Plan the newly created task using its directory path, not the active task's breadcrumb or artifact paths. Keep planning separate from activation; after artifact review and user approval, use `task.py start <new-task>` at step 1.4 to switch explicitly.
 
 Run only `create` here — do not also run `start`. `start` flips status to `in_progress`, which switches the breadcrumb to the implementation phase before planning artifacts are reviewed. Save `start` for step 1.4.
 
-Skip when `python3 ./.trellis/scripts/task.py current --source` already points to a task.
+Skip creation when the intended task already exists; use that directory as the planning target. A different active task, including a parent, is not a reason to skip creating the intended task.
 
 #### 1.1 Requirement exploration `[required · repeatable]`
 

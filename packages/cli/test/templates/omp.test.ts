@@ -58,7 +58,7 @@ function captureOmpHandlers(): Map<string, OmpEventHandler> {
 }
 
 function makeOmpProject(): { root: string; taskDir: string; sessionId: string } {
-  const root = fs.mkdtempSync(path.join(process.env.TMPDIR ?? "/tmp", "trellis-omp-") );
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "trellis-omp-"));
   const taskDir = path.join(root, ".trellis", "tasks", "08-13-context-limits");
   const sessionId = "context_limits";
   fs.mkdirSync(path.join(root, ".trellis", ".runtime", "sessions"), { recursive: true });
@@ -91,6 +91,22 @@ async function runSessionStart(root: string, sessionId: string): Promise<string>
 }
 
 describe("omp templates", () => {
+  it("creates its project fixture in OS temp when TMPDIR is absent", () => {
+    const previousTmpdir = process.env.TMPDIR;
+    delete process.env.TMPDIR;
+    let root: string | undefined;
+    try {
+      const project = makeOmpProject();
+      root = project.root;
+      expect(path.dirname(project.root)).toBe(os.tmpdir());
+      expect(fs.existsSync(path.join(project.taskDir, "task.json"))).toBe(true);
+    } finally {
+      if (previousTmpdir === undefined) delete process.env.TMPDIR;
+      else process.env.TMPDIR = previousTmpdir;
+      if (root !== undefined) fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("provides the three Trellis sub-agent definitions", () => {
     const agents = getAllAgents();
     expect(agents.map((agent) => agent.name).sort()).toEqual([

@@ -1,0 +1,2 @@
+{"file":".trellis/spec/cli/backend/commands-upgrade.md","reason":"Review command behavior compatibility"}
+{"file":".trellis/spec/cli/unit-test/conventions.md","reason":"Review regression coverage and isolation"}

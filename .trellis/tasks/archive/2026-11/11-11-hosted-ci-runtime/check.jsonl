@@ -1,0 +1,6 @@
+{"file":".trellis/spec/core/backend/index.md","reason":"Core quality gate"}
+{"file":".trellis/spec/cli/backend/trellis-core-sdk.md","reason":"Public package boundary review"}
+{"file":".trellis/spec/cli/backend/commands-channel.md","reason":"Watch/filter/abort/polling semantics"}
+{"file":".trellis/spec/cli/unit-test/conventions.md","reason":"Review meaningful native-crash regression and isolation"}
+{"file":".trellis/tasks/11-11-hosted-ci-runtime/research/root-cause-20261111.md","reason":"Compare actual implementation and hosted evidence to diagnosed causes"}
+{"file": ".trellis/spec/cli/backend/script-conventions.md", "reason": "Validate bounded hook stdout and source-fixture fixes"}

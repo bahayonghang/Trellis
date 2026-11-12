@@ -54,10 +54,12 @@ Do **not** maintain a manual coverage table — always run `pnpm test:coverage` 
 
 | Stage | What Runs | Rationale |
 |-------|-----------|-----------|
-| **pre-commit** (husky) | `lint-staged` (eslint + prettier) | Keep fast; don't add tests here or developers will skip with `--no-verify` |
+| **pre-commit** (husky) | `lint-staged` (eslint + prettier) → `git submodule update --init marketplace` → unset `GIT_DIR`/`GIT_WORK_TREE`/`GIT_INDEX_FILE`/`GIT_COMMON_DIR`/`GIT_OBJECT_DIRECTORY` → full `pnpm test` (since #436) | Template mirror drift against `marketplace/` was only caught in CI. The git env vars must be unset or integration tests that run `git` in fixture repos act on the real repository. A machine with known test failures cannot commit through this hook; record them in the baseline before deciding whether to bypass it |
 | **CI** (GitHub Actions, PR gate) | Pin Python 3.9 → compile every tracked `.py` file → TypeScript + Python typecheck → `pnpm lint` → `pnpm build` → `pnpm test` | Parse all shipped scripts with the real minimum interpreter before running the suite, then enforce `basedpyright` so syntax and type regressions cannot hide in unexecuted templates |
 
 **When to reconsider**: If total test time exceeds 5 minutes, split into fast (unit) and slow (integration) stages. Currently unnecessary.
+
+**Timeouts**: `vitest.config.ts` sets `testTimeout` to 10 s on Linux and 30 s on Windows. On Windows the all-platform configurator loops in `test/configurators/platforms.test.ts` take ~6 s alone and 10–15 s in the parallel run. Do not lower the Windows value without re-measuring a full `pnpm test` there.
 
 ---
 

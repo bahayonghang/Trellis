@@ -1,0 +1,30 @@
+{
+  "id": "hosted-ci-runtime",
+  "name": "hosted-ci-runtime",
+  "title": "修复 hosted CI 后续失败并验证自用源码安装",
+  "description": "定位并修复 Ubuntu Python3.9 分发与 Windows Node26 测试崩溃，保留兼容性覆盖并验证本机源码使用链路。",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": "core",
+  "priority": "P0",
+  "creator": "bahayonghang",
+  "assignee": "bahayonghang",
+  "createdAt": "2026-11-11",
+  "completedAt": "2026-11-11",
+  "branch": "dev",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "c85aff5b019ce2ba14e8643924901ca1aef1e1b2",
+  "pr_url": "https://github.com/bahayonghang/Trellis/pull/1",
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "verified_dev_run": "https://github.com/bahayonghang/Trellis/actions/runs/43149689290",
+    "verified_pr_run": "https://github.com/bahayonghang/Trellis/actions/runs/43149695069",
+    "final_acceptance": "dev and PR runs completed success, 8 jobs; source launcher and lifecycle checks passed; no npm publication"
+  }
+}

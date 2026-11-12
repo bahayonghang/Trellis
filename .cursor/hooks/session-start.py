@@ -7,6 +7,10 @@ from __future__ import annotations
 
 # IMPORTANT: Suppress all warnings FIRST
 import warnings
+
+from trellis_hook_input import read_hook_json
+from trellis_hook_paths import find_trellis_root
+
 warnings.filterwarnings("ignore")
 
 import json
@@ -102,27 +106,24 @@ def _build_first_reply_notice(update_hint: str | None) -> str:
     )
 
 
-# Force UTF-8 on stdin/stdout/stderr on Windows. Default codepage there is
-# cp936 / cp1252 / etc. — non-ASCII content (Chinese task names, prd snippets)
-# both in stdin (hook payload from host CLI) and stdout (our emitted blocks)
-# raises UnicodeDecodeError / UnicodeEncodeError. Equivalent to `python -X utf8`
-# but applied per-stream so we don't depend on host CLI's command wiring.
-if sys.platform.startswith("win"):
-    import io as _io
-    for _stream_name in ("stdin", "stdout", "stderr"):
-        _stream = getattr(sys, _stream_name, None)
-        if _stream is None:
-            continue
-        if hasattr(_stream, "reconfigure"):
-            try:
-                _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-            except Exception:
-                pass  # Optional Windows stream setup; keep hook startup non-fatal.
-        elif hasattr(_stream, "detach"):
-            try:
-                setattr(sys, _stream_name, _io.TextIOWrapper(_stream.detach(), encoding="utf-8", errors="replace"))
-            except Exception:
-                pass  # Optional Windows stream setup; keep hook startup non-fatal.
+def _configure_hook_encoding() -> None:
+    """Configure Windows streams only after selecting an owned workspace."""
+    if sys.platform.startswith("win"):
+        import io as _io
+        for _stream_name in ("stdin", "stdout", "stderr"):
+            _stream = getattr(sys, _stream_name, None)
+            if _stream is None:
+                continue
+            if hasattr(_stream, "reconfigure"):
+                try:
+                    _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+                except Exception:
+                    pass  # Optional Windows stream setup; keep hook startup non-fatal.
+            elif hasattr(_stream, "detach"):
+                try:
+                    setattr(sys, _stream_name, _io.TextIOWrapper(_stream.detach(), encoding="utf-8", errors="replace"))
+                except Exception:
+                    pass  # Optional Windows stream setup; keep hook startup non-fatal.
 
 
 
@@ -300,7 +301,9 @@ def _persist_context_key_for_bash(context_key: str | None) -> None:
     try:
         if _last_context_key_export(env_file) == export_line:
             return
-        with open(env_file, "a", encoding="utf-8") as handle:
+        # newline="\n": the host sources this file with bash, which would keep
+        # the "\r" of a Windows text-mode CRLF inside TRELLIS_CONTEXT_ID.
+        with open(env_file, "a", encoding="utf-8", newline="\n") as handle:
             handle.write(f"{export_line}\n")
     except OSError:
         pass  # Optional shell bridge; keep session-start non-fatal.
@@ -823,12 +826,7 @@ def main():
     if should_skip_injection():
         sys.exit(0)
 
-    try:
-        hook_input = json.loads(sys.stdin.read())
-        if not isinstance(hook_input, dict):
-            hook_input = {}
-    except (json.JSONDecodeError, ValueError):
-        hook_input = {}
+    hook_input = read_hook_json()
 
     # Try platform-specific env vars, hook cwd, fallback to cwd
     project_dir_env_vars = [
@@ -847,12 +845,19 @@ def main():
     for var in project_dir_env_vars:
         val = os.environ.get(var)
         if val:
-            project_dir = Path(_normalize_windows_shell_path(val)).resolve()
+            project_dir = Path(_normalize_windows_shell_path(val))
             break
     if project_dir is None:
-        project_dir = Path(_normalize_windows_shell_path(hook_input.get("cwd", "."))).resolve()
+        project_dir = Path(_normalize_windows_shell_path(hook_input.get("cwd", ".")))
 
+    project_dir = find_trellis_root(project_dir)
+    if project_dir is None:
+        return
     trellis_dir = project_dir / ".trellis"
+    if not (trellis_dir / "scripts" / "common" / "active_task.py").is_file() or not (trellis_dir / "scripts" / "common" / "__init__.py").is_file():
+        return
+
+    _configure_hook_encoding()
     context_key = _resolve_context_key(trellis_dir, hook_input)
     _persist_context_key_for_bash(context_key)
 

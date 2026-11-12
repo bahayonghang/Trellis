@@ -1,0 +1,40 @@
+{
+  "init_flags": [
+    "--claude",
+    "--cursor",
+    "--codex",
+    "--gemini",
+    "--qoder",
+    "--copilot",
+    "--codebuddy",
+    "--droid",
+    "--kiro",
+    "--trae",
+    "--zcode",
+    "--snow"
+  ],
+  "helper_paths": [
+    ".claude/hooks/trellis_hook_input.py",
+    ".codebuddy/hooks/trellis_hook_input.py",
+    ".codex/hooks/trellis_hook_input.py",
+    ".cursor/hooks/trellis_hook_input.py",
+    ".factory/hooks/trellis_hook_input.py",
+    ".gemini/hooks/trellis_hook_input.py",
+    ".github/copilot/hooks/trellis_hook_input.py",
+    ".kiro/hooks/trellis_hook_input.py",
+    ".qoder/hooks/trellis_hook_input.py",
+    ".snow/hooks/trellis_hook_input.py",
+    ".trae/hooks/trellis_hook_input.py",
+    ".zcode/hooks/trellis_hook_input.py"
+  ],
+  "canonical_bytes_and_hash_tracking": true,
+  "statusline_helper_available": true,
+  "initial_dry_run": "Already up to date!",
+  "recorded_user_deletions_respected": true,
+  "prior_release_unrecorded_assets_installed": true,
+  "post_upgrade_dry_run": "Already up to date!",
+  "uninstall_plan_contains_all_helpers": true,
+  "dirty_uninstall_guard_preserved": true,
+  "uninstall_execution": "Not bypassed; intentionally dirty fixture refused --yes, then temporary fixture cleaned normally.",
+  "canonical_sha256": "0b49688cff70746511eefb130bd3bc3412a80019e3aa2d126d8cbdbf6da1cffc"
+}

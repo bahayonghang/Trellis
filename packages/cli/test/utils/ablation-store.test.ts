@@ -90,6 +90,168 @@ describe("ablation-store", () => {
     });
   }
 
+  function prepareRenameScenario(kind: "staging" | "file" | "directory"): {
+    destination: string;
+    run: () => unknown;
+    transaction?: LoadedAblationTransaction;
+  } {
+    if (kind === "staging") {
+      return {
+        destination: getTransactionPaths(projectDir).transactionDir,
+        run: stage,
+      };
+    }
+    if (kind === "file") {
+      const entry = entries()[0];
+      if (entry.pre.kind !== "file")
+        throw new Error("Expected regular-file fixture");
+      const transaction = stageAblationTransaction({
+        projectRoot: projectDir,
+        configuredPlatforms: ["codex"],
+        manifest: { "managed.txt": "abc" },
+        entries: [
+          {
+            ...entry,
+            expectedAblated: expectedFileFingerprint(
+              "ablated\n",
+              entry.pre.mode,
+            ),
+          },
+        ],
+      });
+      const destination = path.join(fs.realpathSync(projectDir), "managed.txt");
+      fs.writeFileSync(destination, "ablated\n");
+      transitionAblationState(transaction, "applied");
+      return {
+        destination,
+        run: () => restoreAblationTransaction(transaction),
+        transaction,
+      };
+    }
+    const transaction = stage();
+    removeManagedState();
+    transitionAblationState(transaction, "applied");
+    return {
+      destination: path.join(fs.realpathSync(projectDir), ".trellis"),
+      run: () => restoreAblationTransaction(transaction),
+      transaction,
+    };
+  }
+
+  const renameKinds = ["staging", "file", "directory"] as const;
+  it.each(
+    renameKinds.flatMap((kind) =>
+      ["EPERM", "EACCES", "EBUSY"].map((code) => ({ kind, code })),
+    ),
+  )(
+    "R13 retries $code publishing $kind and retains exact recovery data",
+    ({ kind, code }) => {
+      vi.spyOn(process, "platform", "get").mockReturnValue("win32");
+      const scenario = prepareRenameScenario(kind);
+      const originalManaged = kind === "file" ? "ablated\n" : "managed\n";
+      const realRename = fs.renameSync.bind(fs);
+      let injected = 0;
+      vi.spyOn(fs, "renameSync").mockImplementation((source, destination) => {
+        if (destination === scenario.destination && injected < 2) {
+          injected++;
+          if (kind !== "directory") {
+            expect(
+              fs.readFileSync(path.join(projectDir, "managed.txt"), "utf-8"),
+            ).toBe(originalManaged);
+          }
+          throw Object.assign(new Error("transient publish failure"), { code });
+        }
+        return realRename(source, destination);
+      });
+      // Real metadata and publication renames retain production waiting.
+      // The exact third-attempt schedule is controlled in rename.test.ts.
+      scenario.run();
+
+      expect(injected).toBe(2);
+      if (scenario.transaction) verifyRestoredState(scenario.transaction);
+      expect(loadAblationTransaction(projectDir)?.state.status).toBe(
+        kind === "staging" ? "preparing" : "restoring",
+      );
+      expect(
+        fs.readFileSync(path.join(projectDir, "managed.txt"), "utf-8"),
+      ).toBe("managed\n");
+      expect(
+        fs
+          .readdirSync(projectDir)
+          .filter((name) => name.endsWith(".restore.tmp")),
+      ).toEqual([]);
+      expect(fs.readdirSync(stateRoot)).toEqual([projectKey(projectDir)]);
+    },
+  );
+
+  it.each(
+    renameKinds.flatMap((kind) => [
+      { kind, code: "EPERM", attempts: 11 },
+      { kind, code: "EIO", attempts: 1 },
+    ]),
+  )(
+    "R13 cleans $kind after $code ($attempts attempts) and preserves the original error and recovery state",
+    ({ kind, code, attempts }) => {
+      vi.spyOn(process, "platform", "get").mockReturnValue("win32");
+      const scenario = prepareRenameScenario(kind);
+      const realRename = fs.renameSync.bind(fs);
+      const failure = Object.assign(new Error("publish failure"), { code });
+      let calls = 0;
+      vi.spyOn(fs, "renameSync").mockImplementation((source, destination) => {
+        if (destination === scenario.destination) {
+          calls++;
+          throw failure;
+        }
+        return realRename(source, destination);
+      });
+      // Only the selected publication always fails. Metadata renames remain
+      // native, so neither their attempts nor their waits belong in this count.
+      let caught: unknown;
+      try {
+        scenario.run();
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).toBe(failure);
+      expect(calls).toBe(attempts);
+      expect(
+        fs
+          .readdirSync(projectDir)
+          .filter((name) => name.endsWith(".restore.tmp")),
+      ).toEqual([]);
+      expect(fs.existsSync(getTransactionPaths(projectDir).lockFile)).toBe(
+        false,
+      );
+      if (kind === "staging") {
+        expect(fs.readdirSync(stateRoot)).toEqual([]);
+        expect(loadAblationTransaction(projectDir)).toBe(null);
+        expect(
+          fs.readFileSync(path.join(projectDir, "managed.txt"), "utf-8"),
+        ).toBe("managed\n");
+        expect(
+          fs.readFileSync(
+            path.join(projectDir, ".trellis", "config.yaml"),
+            "utf-8",
+          ),
+        ).toBe("version: 1\n");
+      } else {
+        expect(loadAblationTransaction(projectDir)?.state.status).toBe(
+          "restoring",
+        );
+        if (kind === "file")
+          expect(fs.readFileSync(scenario.destination, "utf-8")).toBe(
+            "ablated\n",
+          );
+        else expect(fs.existsSync(scenario.destination)).toBe(false);
+        vi.restoreAllMocks();
+        vi.spyOn(process, "platform", "get").mockReturnValue("win32");
+        scenario.run();
+        if (scenario.transaction) verifyRestoredState(scenario.transaction);
+      }
+    },
+  );
+
   it("derives a stable full-width project identity", () => {
     const key = projectKey(projectDir);
     expect(key).toMatch(/^[a-f0-9]{64}$/);

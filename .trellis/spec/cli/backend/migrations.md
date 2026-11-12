@@ -225,9 +225,77 @@ And **does NOT record** when:
 
 Every configurator that wants its writes tracked must funnel through `writeFile()` — direct `fs.writeFileSync` bypasses the recorder.
 
-#### `.trellis/` walk exemption
+#### Scenario: `.trellis/` baselines during add-platform init (#620)
 
-`.trellis/` files are still hashed via recursive walk (existing `collectFiles` behavior + `EXCLUDE_FROM_HASH` filters). Rationale: `trellis uninstall` step 3 does `fs.rmSync('.trellis/', { recursive: true, force: true })` regardless of manifest content, so the walk's blast radius is contained. Over-hashing inside `.trellis/` only affects `trellis update` 3-way-merge accuracy, not uninstall safety.
+Selectively ported from [mindfold-ai/Trellis#653](https://github.com/mindfold-ai/Trellis/pull/653)
+by Huanyi Xie (`xiehuanyi`).
+
+##### 1. Scope / Trigger
+
+Adding a platform must preserve the template baseline used by `trellis update`
+to detect local edits. Re-hashing untouched customized files makes those edits
+look unmodified and allows a later update to overwrite them silently.
+
+##### 2. Signatures
+
+`initializeHashes(cwd, { trackedPaths?: ReadonlySet<string>, merge?: boolean })`
+returns the number of final manifest entries. `handleReinit` passes recorded
+platform writes with `merge: true`; fresh init uses the default replace mode.
+
+##### 3. Contracts
+
+Fresh init walks `.trellis/` using `collectFiles` and `EXCLUDE_FROM_HASH`.
+Merge mode hashes only recorded `.trellis/` writes with the same exclusions.
+Untouched entries retain their original hashes or deliberate absence, even
+when `trackedPaths` is empty or omitted. Platform/root writes remain driven by
+`trackedPaths`, and previously tracked platform entries survive a merge.
+The legacy root-file fallback when `trackedPaths` is omitted is unchanged.
+
+##### 4. Validation & Error Matrix
+
+| Invocation / path | Baseline behavior |
+|---|---|
+| Fresh initialization | Existing recursive workflow coverage |
+| Merge; workflow path was written | Refresh its hash unless excluded |
+| Merge; workflow path was not written | Preserve its existing hash or absence |
+| Merge; no recorded workflow paths | Do not scan or adopt workflow files |
+| Recorded excluded path (spec/tasks/workspace/metadata/backup) | Do not add a hash |
+| Recorded path missing or unreadable | Skip it; retain any existing hash |
+
+##### 5. Good / Base / Bad Cases
+
+- Good: adding DSH keeps custom config/workflow/scripts marked modified.
+- Base: a newly written platform file receives its installation hash.
+- Bad: adding a platform replaces a customized config's baseline with its local hash.
+
+##### 6. Tests Required
+
+- `test/utils/template-hash.test.ts`: preserve modified baselines and deliberately
+  absent entries with empty/omitted writes; track recorded workflow writes while
+  retaining exclusions and fresh-init recursive coverage.
+- `test/commands/init.integration.test.ts`: init Cursor with a developer (so
+  bootstrap exists), customize workflow/config/script, then add DSH **without
+  `force` or `skipExisting`**. Original baselines and Cursor entries survive;
+  DSH entries match its installed templates. An untracked custom workflow stays
+  untracked and modified.
+- `test/commands/update.integration.test.ts` (`#7b TL05`): after the same add-platform
+  flow, dry-run reports `?` / "Modified by you" for all three customized files
+  and leaves an exact full-project byte snapshot unchanged. `createNew` preserves
+  custom bytes and original hashes and writes the expected template `.new` files.
+
+##### 7. Wrong vs Correct
+
+```typescript
+// Wrong in merge mode: rebase untouched local edits onto the current disk state.
+const files = collectFiles(cwd, ".trellis");
+
+// Correct: only actual workflow writes may refresh an existing receipt.
+const files = merge
+  ? [...(trackedPaths ?? [])].filter(
+      (p) => p.startsWith(".trellis/") && !shouldExcludeFromHash(p),
+    )
+  : collectFiles(cwd, ".trellis");
+```
 
 #### Self-heal contract: `pruneOrphanManifestKeys`
 
@@ -235,7 +303,7 @@ Existing users may have poisoned manifests from older trellis versions. `pruneOr
 
 **Preserve set** (a key is kept iff one of):
 
-1. Starts with `.trellis/` (walk-managed)
+1. Starts with `.trellis/` (workflow baseline; fresh-init walk / merge recorded writes)
 2. Path appears in `PLATFORM_FUNCTIONS[id].collectTemplates()` output for ANY configured platform
 3. Path appears in `from` or `to` of ANY migration manifest entry (across all `migrations/manifests/*.json`, not just pending) — must preserve so rename/delete migration logic still has a hash to compare against
 4. Path is `AGENTS.md` AND the file on disk contains `TRELLIS_BLOCK_START` + `TRELLIS_BLOCK_END` markers, OR the file is missing. Files lacking markers are treated as user-owned and pruned.

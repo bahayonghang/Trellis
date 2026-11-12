@@ -218,6 +218,12 @@ The command never stages, commits, or hides Git changes.
    retryable.
 7. Delete the external transaction only after complete verification.
 
+Staging and both rename-based restore branches use `renameSyncWithRetry`
+(`utils/rename.ts`): Windows `EPERM`/`EACCES`/`EBUSY` permit 10 retries at
+10–100 ms; all other failures/platforms fail immediately. Retry changes neither
+pre-publication conflict checks nor temp cleanup/recovery-state retention.
+See [Filesystem Safety](./filesystem-safety.md#windows-transient-rename-recovery-r13).
+
 The reservation serializes Trellis operations, not arbitrary external editors.
 Callers must keep the affected managed paths quiescent during restore. The
 immediate per-path recheck detects changes before publication and final

@@ -100,6 +100,8 @@ subprocess.run(["python3", "other_script.py"])
 subprocess.run([sys.executable, "other_script.py"])
 ```
 
+**Rule 7**: Pass code and arguments to Python as an argv array (`execFileSync(pythonCmd, ["-c", code])`), not as a shell string. Quoting `code` with `JSON.stringify` doubles each backslash; `sh` undoes that, `cmd.exe` does not, so on Windows a `'\n'` inside the code reaches Python as a backslash followed by `n`.
+
 ### 2. Path Handling
 
 | Assumption | macOS/Linux | Windows |
@@ -197,6 +199,20 @@ export function computeHash(content: string): string {
 ```
 
 Apply this rule wherever the hash crosses OS boundaries (template hash dictionary, content fingerprints stored in JSON, integrity checks against a remote registry).
+
+**Rule 3**: Python text mode on Windows turns every `"\n"` written into `"\r\n"`, for files and for stdout alike. Pass `newline="\n"` when the file is read by bash or compared byte-for-byte. `CLAUDE_ENV_FILE` is sourced by bash, so a CRLF export line puts a trailing `\r` into `TRELLIS_CONTEXT_ID`.
+
+```python
+# BAD - CRLF on Windows; bash keeps the \r in the value
+with open(env_file, "a", encoding="utf-8") as handle:
+    handle.write(f"{export_line}\n")
+
+# GOOD
+with open(env_file, "a", encoding="utf-8", newline="\n") as handle:
+    handle.write(f"{export_line}\n")
+```
+
+In tests, normalize captured Python stdout (`stdout.replace(/\r\n/g, "\n")`) before comparing it with LF literals.
 
 ### 4. Environment Variables
 
@@ -334,6 +350,12 @@ result = subprocess.run(
     errors="replace"
 )
 ```
+
+### 6a. Replacing Files on Windows
+
+Write-to-temp-then-rename (`fs.rename`, `fs.renameSync`, `os.replace`) replaces the target atomically on POSIX. On Windows the replace fails with `EPERM` / `EACCES` / `EBUSY` (Python: `PermissionError`) whenever another process holds the target open, and antivirus or the search indexer briefly opens freshly written files. On the maintainer's Windows 11 machine this happened about once per 3000–6000 replaces, enough to fail the full test suite at random.
+
+**Rule**: For atomic state writes and ablation publication, reuse CLI `renameSyncWithRetry()` (`utils/rename.ts`); Python `common/io.py` uses the same Windows-only bounded schedule. Core sidecars retain their asynchronous `renameReplacing()` implementation. All allow 10 retries, 10 ms × attempt, at most ~550 ms, and fail fast elsewhere. Preserve existing cleanup and conflict guards; see [Filesystem Safety](../cli/backend/filesystem-safety.md#windows-transient-rename-recovery-r13) for the executable contract and tests. `commands/update.ts` migration rename sites remain outside R13.
 
 ---
 

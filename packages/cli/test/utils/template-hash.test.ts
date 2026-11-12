@@ -403,7 +403,7 @@ describe("initializeHashes", () => {
   });
 
   it("hashes files in .trellis/ and tracked platform paths", () => {
-    // .trellis/ is always walked recursively. Platform paths (.claude/, etc.)
+    // Fresh init walks .trellis/ recursively. Platform paths (.claude/, etc.)
     // are hashed only when explicitly listed in `trackedPaths` — the source-
     // of-truth set captured by `startRecordingWrites` during init.
     fs.mkdirSync(path.join(tmpDir, ".trellis", "scripts"), { recursive: true });
@@ -426,6 +426,87 @@ describe("initializeHashes", () => {
     const hashes = loadHashes(tmpDir);
     expect(hashes).toHaveProperty(".trellis/scripts/task.py");
     expect(hashes).toHaveProperty(".claude/commands/start.md");
+  });
+
+  // Selectively ported from mindfold-ai/Trellis#653 (Huanyi Xie, #620).
+  it.each(["config.yaml", "workflow.md", "scripts/task.py"])(
+    "preserves the %s baseline when adding a platform (#620)",
+    (relativePath) => {
+      const workflowPath = `.trellis/${relativePath}`;
+      const fullPath = path.join(tmpDir, workflowPath);
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      fs.writeFileSync(fullPath, "original template\n");
+      initializeHashes(tmpDir);
+      const baseline = loadHashes(tmpDir)[workflowPath];
+      expect(baseline).toBe(computeHash("original template\n"));
+
+      fs.writeFileSync(fullPath, "user customization\n");
+      const platformPath = ".codex/config.toml";
+      fs.mkdirSync(path.join(tmpDir, ".codex"));
+      fs.writeFileSync(path.join(tmpDir, platformPath), "new platform template\n");
+      initializeHashes(tmpDir, {
+        trackedPaths: new Set([platformPath]),
+        merge: true,
+      });
+
+      const hashes = loadHashes(tmpDir);
+      expect(hashes[workflowPath]).toBe(baseline);
+      expect(isTemplateModified(tmpDir, workflowPath, hashes)).toBe(true);
+      expect(hashes[platformPath]).toBe(computeHash("new platform template\n"));
+    },
+  );
+
+  it.each([undefined, new Set<string>()])(
+    "does not adopt untracked workflow files when merging with trackedPaths=%s (#620)",
+    (trackedPaths) => {
+      fs.mkdirSync(path.join(tmpDir, ".trellis"));
+      fs.writeFileSync(
+        path.join(tmpDir, ".trellis", "workflow.md"),
+        "custom workflow\n",
+      );
+      fs.writeFileSync(path.join(tmpDir, ".trellis", "hooks.local.json"), "{}\n");
+      const existing = { ".claude/commands/continue.md": "existing-baseline" };
+      saveHashes(tmpDir, existing);
+
+      expect(initializeHashes(tmpDir, { trackedPaths, merge: true })).toBe(1);
+      expect(loadHashes(tmpDir)).toEqual(existing);
+    },
+  );
+
+  it("tracks recorded workflow writes and retains exclusions when merging (#620)", () => {
+    const writes = new Map([
+      [".trellis/scripts/new.py", "print('new')\n"],
+      [".trellis/workflow.md", "new workflow\n"],
+      [".trellis/spec/backend/index.md", "user spec\n"],
+      [".trellis/tasks/demo/task.json", "{}\n"],
+      [".trellis/workspace/alice/journal.md", "user journal\n"],
+      [".trellis/.backup-old/config.yaml", "old config\n"],
+      [".trellis/.version", "0.0.1\n"],
+      [".trellis/.gitignore", "local\n"],
+      [".trellis/.developer", "alice\n"],
+      [".trellis/.current-task", "demo\n"],
+    ]);
+    for (const [relativePath, content] of writes) {
+      const fullPath = path.join(tmpDir, relativePath);
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      fs.writeFileSync(fullPath, content);
+    }
+    saveHashes(tmpDir, { ".trellis/workflow.md": computeHash("old workflow\n") });
+
+    const count = initializeHashes(tmpDir, {
+      trackedPaths: new Set([
+        ...writes.keys(),
+        ".trellis/.template-hashes.json",
+        ".trellis/scripts/missing.py",
+      ]),
+      merge: true,
+    });
+
+    expect(count).toBe(2);
+    expect(loadHashes(tmpDir)).toEqual({
+      ".trellis/scripts/new.py": computeHash("print('new')\n"),
+      ".trellis/workflow.md": computeHash("new workflow\n"),
+    });
   });
 
   it("does NOT hash platform-dir files that are not in trackedPaths", () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   SHARED_HOOKS_BY_PLATFORM,
   getSharedHookScripts,
+  getSharedHookSupportFiles,
   getSharedHookScriptsForPlatform,
   type SharedHookName,
   type SharedHookPlatform,
@@ -184,14 +185,17 @@ describe("shared-hooks capability table", () => {
     );
   });
 
-  it("getSharedHookScriptsForPlatform returns exactly the declared set per platform", () => {
+  it("getSharedHookScriptsForPlatform returns declared entrypoints plus standalone support assets", () => {
     for (const platform of Object.keys(
       SHARED_HOOKS_BY_PLATFORM,
     ) as SharedHookPlatform[]) {
       const names = getSharedHookScriptsForPlatform(platform)
         .map((h) => h.name)
         .sort();
-      const expected = [...SHARED_HOOKS_BY_PLATFORM[platform]].sort();
+      const expected = [
+        ...getSharedHookSupportFiles().map((asset) => asset.name),
+        ...SHARED_HOOKS_BY_PLATFORM[platform],
+      ].sort();
       expect(names).toEqual(expected);
     }
   });

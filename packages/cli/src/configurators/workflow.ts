@@ -8,7 +8,6 @@ import { copyTrellisDir } from "../templates/extract.js";
 import {
   workflowMdTemplate,
   configYamlTemplate,
-  gitignoreTemplate,
   gitattributesTemplate,
   getAllAgents,
 } from "../templates/trellis/index.js";
@@ -38,6 +37,11 @@ import {
 } from "../templates/markdown/index.js";
 
 import { writeFile, ensureDir } from "../utils/file-writer.js";
+import { writeFileAtomic } from "../utils/atomic-write.js";
+import {
+  planLocalHooksGitignore,
+  TRELLIS_GITIGNORE_PATH,
+} from "../utils/local-hooks-gitignore.js";
 import { replacePythonCommandLiterals } from "./shared.js";
 import {
   sanitizePkgName,
@@ -131,6 +135,7 @@ export async function createWorkflowStructure(
   const packages = options?.packages;
   const remoteSpecPackages = options?.remoteSpecPackages;
   const workflowMd = options?.workflowMdOverride ?? workflowMdTemplate;
+  const gitignore = planLocalHooksGitignore(cwd);
 
   // Create base .trellis directory
   ensureDir(path.join(cwd, DIR_NAMES.WORKFLOW));
@@ -146,11 +151,16 @@ export async function createWorkflowStructure(
     replacePythonCommandLiterals(workflowMd),
   );
 
-  // Copy .gitignore from templates
-  await writeFile(
-    path.join(cwd, DIR_NAMES.WORKFLOW, ".gitignore"),
-    gitignoreTemplate,
-  );
+  // Mixed ownership: force reinit must never replace the user's ignore rules.
+  if (gitignore !== null) {
+    const target = path.join(cwd, TRELLIS_GITIGNORE_PATH);
+    if (
+      !fs.existsSync(target) ||
+      fs.readFileSync(target, "utf-8") !== gitignore
+    ) {
+      writeFileAtomic(target, gitignore);
+    }
+  }
 
   // Copy config.yaml from templates
   await writeFile(

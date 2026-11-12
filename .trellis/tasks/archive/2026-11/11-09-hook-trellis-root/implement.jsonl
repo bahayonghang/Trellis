@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/cli/backend/platform-integration.md", "reason": "Hook protocols, installed support assets, platform capability and session isolation contracts"}
+{"file": ".trellis/spec/cli/backend/script-conventions.md", "reason": "Canonical/dogfood Python parity and actual 3.9 validation"}
+{"file": ".trellis/spec/cli/backend/filesystem-safety.md", "reason": "Path resolution, symlink containment and no-root side effects"}
+{"file": ".trellis/spec/cli/unit-test/integration-patterns.md", "reason": "Real generated hook subprocess and artifact integration tests"}
+{"file": ".trellis/spec/cli/unit-test/conventions.md", "reason": "Root fixtures, strict test types, no new skips/retries or timeout increases"}
+{"file": ".trellis/spec/guides/cross-platform-thinking-guide.md", "reason": "Native Windows pipe, path and directory-junction evidence without POSIX claims"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "One canonical root predicate, reuse existing support-asset distribution"}
+{"file": ".trellis/tasks/11-09-hook-trellis-root/research/upstream-650.md", "reason": "Reviewed upstream scope and stronger local validity/preservation boundaries"}

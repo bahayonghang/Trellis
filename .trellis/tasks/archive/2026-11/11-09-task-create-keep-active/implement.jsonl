@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/cli/backend/script-conventions.md", "reason": "Session pointer lifecycle and Python 3.9/twin contracts; read create sections directly"}
+{"file": ".trellis/spec/cli/backend/workflow-state-contract.md", "reason": "Conditional planning activation without changing explicit start"}
+{"file": ".trellis/tasks/11-09-task-create-keep-active/research/upstream-654.md", "reason": "Reviewed selective create-only port and approved marketplace mirror boundary"}

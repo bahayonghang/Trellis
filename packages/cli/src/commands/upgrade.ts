@@ -1,10 +1,14 @@
 import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import chalk from "chalk";
 import { PACKAGE_NAME, VERSION } from "../constants/version.js";
 
 export interface UpgradeOptions {
   tag?: string;
   dryRun?: boolean;
+  forceNpm?: boolean;
 }
 
 interface SpawnResult {
@@ -35,6 +39,20 @@ export interface UpgradeCommandPlan {
 }
 
 const NPM_TAG_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+export function findCheckoutRoot(
+  modulePath: string = fileURLToPath(import.meta.url),
+): string | null {
+  let directory = path.dirname(fs.realpathSync(modulePath));
+  if (directory.split(path.sep).includes("node_modules")) return null;
+
+  while (true) {
+    if (fs.existsSync(path.join(directory, ".git"))) return directory;
+    const parent = path.dirname(directory);
+    if (parent === directory) return null;
+    directory = parent;
+  }
+}
 
 export function resolveUpgradeTag(
   currentVersion: string = VERSION,
@@ -109,8 +127,44 @@ function troubleshooting(plan: UpgradeCommandPlan): string {
 export async function upgrade(
   options: UpgradeOptions = {},
   runner: SpawnRunner = spawnSync,
+  modulePath: string = fileURLToPath(import.meta.url),
 ): Promise<void> {
   const plan = buildUpgradeCommand(options);
+  const checkoutRoot = findCheckoutRoot(modulePath);
+
+  if (checkoutRoot || options.dryRun) {
+    console.log(
+      chalk.gray(
+        checkoutRoot
+          ? `CLI source: git checkout (${checkoutRoot})`
+          : "CLI source: package installation (no git checkout detected)",
+      ),
+    );
+  }
+
+  if (checkoutRoot && !options.forceNpm) {
+    const message = [
+      "Refusing npm upgrade from a git checkout.",
+      "Update this checkout with git pull, then just build (or just install).",
+      "To install the official npm package instead, explicitly pass --force-npm.",
+    ].join("\n");
+    if (!options.dryRun) throw new Error(message);
+    console.log(chalk.yellow(message));
+    console.log(
+      chalk.gray(
+        "Dry run: npm installation would be blocked; no changes made.",
+      ),
+    );
+    return;
+  }
+
+  if (checkoutRoot) {
+    console.log(
+      chalk.yellow(
+        "--force-npm: replacing the checkout link with the official npm package.",
+      ),
+    );
+  }
 
   console.log(chalk.cyan(`Upgrading Trellis CLI to ${plan.target}`));
   console.log(chalk.gray(`Run: ${plan.displayCommand}`));

@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/cli/backend/script-conventions.md", "reason": "Python3.9 task script contracts and hook trust boundary"}
+{"file": ".trellis/spec/cli/backend/filesystem-safety.md", "reason": "Atomic evidence writes, containment, owned paths and dogfood twins"}
+{"file": ".trellis/spec/cli/backend/workflow-state-contract.md", "reason": "Lifecycle completed writer and finish/session compatibility"}
+{"file": ".trellis/spec/cli/backend/quality-guidelines.md", "reason": "Minimal implementation and existing quality gates"}
+{"file": ".trellis/spec/cli/unit-test/conventions.md", "reason": "Meaningful isolated regressions and no timeout/skip relaxation"}
+{"file": ".trellis/tasks/11-09-verification-receipts/design.md", "reason": "Proposed V1 data, execution, freshness and gate contracts"}
+{"file": ".trellis/tasks/11-09-verification-receipts/research/planning-evidence-20261111.md", "reason": "Owning source, issue inspection and graph limits"}
+{"file": ".trellis/spec/cli/backend/task-verification.md", "reason": "Approved executable V1 verifier and archive contracts"}

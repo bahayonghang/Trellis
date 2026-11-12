@@ -5,6 +5,7 @@ import { Command } from "commander";
 import { init } from "../commands/init.js";
 import { update } from "../commands/update.js";
 import { upgrade } from "../commands/upgrade.js";
+import { doctor } from "../commands/doctor.js";
 import { uninstall } from "../commands/uninstall.js";
 import { ablate, restore } from "../commands/ablate.js";
 import { runMem } from "../commands/mem.js";
@@ -55,7 +56,10 @@ function checkForUpdates(cwd: string): void {
 
 // Check for updates at CLI startup (only if .trellis exists)
 const cwd = process.cwd();
-if (fs.existsSync(path.join(cwd, DIR_NAMES.WORKFLOW))) {
+if (
+  process.argv[2] !== "doctor" &&
+  fs.existsSync(path.join(cwd, DIR_NAMES.WORKFLOW))
+) {
   checkForUpdates(cwd);
 }
 
@@ -191,12 +195,20 @@ program
     "--tag <tag>",
     "npm dist-tag or version to install (default follows current channel: latest, beta, or rc)",
   )
-  .option("--dry-run", "Print the install command without running it")
+  .option(
+    "--dry-run",
+    "Report checkout detection and the planned upgrade without running it",
+  )
+  .option(
+    "--force-npm",
+    "Allow replacing a checkout link with the official npm package",
+  )
   .action(async (options: Record<string, unknown>) => {
     try {
       await upgrade({
         tag: options.tag as string | undefined,
         dryRun: options.dryRun as boolean,
+        forceNpm: options.forceNpm as boolean,
       });
     } catch (error) {
       console.error(
@@ -390,6 +402,24 @@ program
       if (process.env.DEBUG || process.env.TRELLIS_DEBUG) {
         console.error(error instanceof Error ? error.stack : error);
       }
+      process.exit(1);
+    }
+  });
+
+program
+  .command("doctor")
+  .description(
+    "Read-only local Trellis diagnostics (does not verify host delivery)",
+  )
+  .option("--json", "Output a schema-versioned diagnostic report")
+  .action((options: { json?: boolean }) => {
+    try {
+      doctor(options);
+    } catch (error) {
+      console.error(
+        chalk.red("Error:"),
+        error instanceof Error ? error.message : error,
+      );
       process.exit(1);
     }
   });

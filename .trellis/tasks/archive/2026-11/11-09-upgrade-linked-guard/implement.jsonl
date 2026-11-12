@@ -1,0 +1,4 @@
+{"file":".trellis/spec/cli/backend/commands-upgrade.md","reason":"Preserve npm invocation and error contracts"}
+{"file":".trellis/spec/cli/backend/quality-guidelines.md","reason":"TypeScript conventions"}
+{"file":".trellis/spec/cli/unit-test/conventions.md","reason":"Behavioral regression coverage"}
+{"file":".trellis/spec/cli/unit-test/mock-strategies.md","reason":"Mock npm side effects, use real fixture paths"}

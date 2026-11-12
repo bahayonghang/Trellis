@@ -141,6 +141,27 @@ All three bugs were invisible to unit tests (which test modules in isolation) bu
 
 ---
 
+## Recorded Hook Payload Replay
+
+Use `test/fixtures/hook-payloads/README.md` as the provenance/refresh contract
+and `test/scripts/hook-payload-replay.integration.test.ts` as the executable
+example. Keep exact source host versions, immutable capture refs/hashes,
+upstream review caveats and license. Redact personal paths and host identities;
+label changed role, identity, cwd and newline variants as derived data.
+
+Replay the shipped registration/script and assert protocol fields plus actual
+fixture context: Claude `updatedInput`, Codex `additionalContext`, workflow-state
+and role-appropriate spec/PRD text. A captured default/research role must retain
+its actual behavior; use explicitly derived implement-role cases to test task
+context. Exit0 or `allow` alone is insufficient. Mutate a temporary installed
+hook's required output field and verify the same positive-case oracle rejects
+it despite a successful exit. Never mutate the checked-out product for this.
+
+Separate payload replay, shell launch checks and real native host evidence.
+Claude payload-cwd tests do not establish its native launch cwd. Normal native
+trust can persist CODEX_HOME settings; only explicit file snapshots establish
+byte invariance. Local replay also does not establish remote CI results.
+
 ## DO / DON'T
 
 ### DO

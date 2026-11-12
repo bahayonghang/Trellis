@@ -1,0 +1,2 @@
+{"file":".trellis/spec/cli/unit-test/conventions.md","reason":"Review test isolation and runtime coverage"}
+{"file":".trellis/spec/guides/cross-platform-thinking-guide.md","reason":"Review Windows CI contracts"}

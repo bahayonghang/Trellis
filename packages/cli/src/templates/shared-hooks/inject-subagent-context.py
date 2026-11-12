@@ -24,6 +24,10 @@ from __future__ import annotations
 
 # IMPORTANT: Suppress all warnings FIRST
 import warnings
+
+from trellis_hook_input import read_hook_json
+from trellis_hook_paths import find_trellis_root
+
 warnings.filterwarnings("ignore")
 
 import json
@@ -31,24 +35,6 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
-
-# Hook hosts send UTF-8 JSON regardless of the process locale.
-_stdin_reconfigure = getattr(sys.stdin, "reconfigure", None)
-if callable(_stdin_reconfigure):
-    try:
-        _stdin_reconfigure(encoding="utf-8", errors="replace")
-    except (OSError, ValueError):
-        pass
-
-# IMPORTANT: Force stdout to use UTF-8 on Windows
-# This fixes UnicodeEncodeError when outputting non-ASCII characters
-if sys.platform.startswith("win"):
-    import io as _io
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-    elif hasattr(sys.stdout, "detach"):
-        sys.stdout = _io.TextIOWrapper(sys.stdout.detach(), encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-
 
 # =============================================================================
 # Path Constants (change here to rename directories)
@@ -73,18 +59,9 @@ AGENTS_ALL = (AGENT_IMPLEMENT, AGENT_CHECK, AGENT_RESEARCH)
 
 
 def find_repo_root(start_path: str) -> str | None:
-    """
-    Find git repo root from start_path upwards
-
-    Returns:
-        Repo root path, or None if not found
-    """
-    current = Path(start_path).resolve()
-    while current != current.parent:
-        if (current / ".git").exists():
-            return str(current)
-        current = current.parent
-    return None
+    """Keep the legacy string API while selecting the nearest valid workspace."""
+    root = find_trellis_root(start_path)
+    return str(root) if root is not None else None
 
 
 def _detect_platform(input_data: dict) -> str | None:
@@ -933,7 +910,10 @@ def _handle_codex_subagent_start(input_data: dict) -> None:
             break
     if not repo_root:
         return
+    if not (Path(repo_root) / DIR_WORKFLOW / "scripts" / "common" / "active_task.py").is_file() or not (Path(repo_root) / DIR_WORKFLOW / "scripts" / "common" / "__init__.py").is_file():
+        return
 
+    _configure_hook_encoding()
     task_dir = get_current_task(
         repo_root,
         {"session_id": parent_session_id},
@@ -1089,16 +1069,27 @@ def _parse_hook_input(input_data: dict) -> tuple[str, str, dict]:
     return "", "", tool_input
 
 
+def _configure_hook_encoding() -> None:
+    """Preserve hook stream setup, but only after workspace discovery."""
+    _stdin_reconfigure = getattr(sys.stdin, "reconfigure", None)
+    if callable(_stdin_reconfigure):
+        try:
+            _stdin_reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            pass
+    if sys.platform.startswith("win"):
+        import io as _io
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+        elif hasattr(sys.stdout, "detach"):
+            sys.stdout = _io.TextIOWrapper(sys.stdout.detach(), encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+
+
 def main():
     if os.environ.get("TRELLIS_HOOKS") == "0" or os.environ.get("TRELLIS_DISABLE_HOOKS") == "1":
         sys.exit(0)
 
-    try:
-        input_data = json.load(sys.stdin)
-    except json.JSONDecodeError:
-        sys.exit(0)
-    if not isinstance(input_data, dict):
-        sys.exit(0)
+    input_data = read_hook_json()
 
     if _hook_event_name(input_data) == "SubagentStart":
         try:
@@ -1120,6 +1111,10 @@ def main():
     repo_root = find_repo_root(cwd)
     if not repo_root:
         sys.exit(0)
+
+    if not (Path(repo_root) / DIR_WORKFLOW / "scripts" / "common" / "active_task.py").is_file() or not (Path(repo_root) / DIR_WORKFLOW / "scripts" / "common" / "__init__.py").is_file():
+        sys.exit(0)
+    _configure_hook_encoding()
 
     # Get current task directory (research doesn't require it)
     task_dir = get_current_task(

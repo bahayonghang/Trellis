@@ -17,30 +17,6 @@ breadcrumbs remain available as a per-turn complement.
 
 from __future__ import annotations
 
-import sys
-
-# Force UTF-8 on stdin/stdout/stderr on Windows. Default codepage there is
-# cp936 / cp1252 / etc. — non-ASCII content (Chinese task names, prd snippets)
-# both in stdin (hook payload from host CLI) and stdout (our emitted blocks)
-# raises UnicodeDecodeError / UnicodeEncodeError. Equivalent to `python -X utf8`
-# but applied per-stream so we don't depend on host CLI's command wiring.
-if sys.platform.startswith("win"):
-    import io as _io
-    for _stream_name in ("stdin", "stdout", "stderr"):
-        _stream = getattr(sys, _stream_name, None)
-        if _stream is None:
-            continue
-        if hasattr(_stream, "reconfigure"):
-            try:
-                _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-            except Exception:
-                pass  # Optional Windows stream setup; keep hook startup non-fatal.
-        elif hasattr(_stream, "detach"):
-            try:
-                setattr(sys, _stream_name, _io.TextIOWrapper(_stream.detach(), encoding="utf-8", errors="replace"))
-            except Exception:
-                pass  # Optional Windows stream setup; keep hook startup non-fatal.
-
 import json
 import os
 import re
@@ -49,6 +25,9 @@ import sys
 import warnings
 from io import StringIO
 from pathlib import Path
+
+from trellis_hook_input import read_hook_json
+from trellis_hook_paths import find_trellis_root
 
 
 def _normalize_windows_shell_path(path_str: str) -> str:
@@ -111,7 +90,7 @@ def should_skip_injection() -> bool:
 
 
 def configure_project_encoding(project_dir: Path) -> None:
-    """Reuse Trellis' shared Windows stdio encoding helper before JSON output."""
+    """Prepare owned-workspace JSON stdout and shared platform stdio support."""
     scripts_dir = project_dir / ".trellis" / "scripts"
     if str(scripts_dir) not in sys.path:
         sys.path.insert(0, str(scripts_dir))
@@ -121,7 +100,11 @@ def configure_project_encoding(project_dir: Path) -> None:
 
         configure_encoding()
     except Exception:
-        pass  # Optional encoding helper; host defaults are still usable.
+        pass  # Optional platform helper; configure JSON stdout below.
+
+    reconfigure_stdout = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure_stdout):
+        reconfigure_stdout(encoding="utf-8", errors="replace")
 
 
 def _has_curated_jsonl_entry(jsonl_path: Path) -> bool:
@@ -475,15 +458,12 @@ def main() -> None:
     if should_skip_injection():
         sys.exit(0)
 
-    # Read hook input from stdin
-    try:
-        hook_input = json.loads(sys.stdin.read())
-        if not isinstance(hook_input, dict):
-            hook_input = {}
-        project_dir = Path(_normalize_windows_shell_path(hook_input.get("cwd", "."))).resolve()
-    except (json.JSONDecodeError, KeyError):
-        hook_input = {}
-        project_dir = Path(".").resolve()
+    hook_input = read_hook_json()
+    project_dir = find_trellis_root(_normalize_windows_shell_path(hook_input.get("cwd", ".")))
+    if project_dir is None:
+        return
+    if not (project_dir / ".trellis" / "scripts" / "common" / "active_task.py").is_file() or not (project_dir / ".trellis" / "scripts" / "common" / "__init__.py").is_file():
+        return
 
     configure_project_encoding(project_dir)
 

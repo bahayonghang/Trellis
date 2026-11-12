@@ -1,0 +1,105 @@
+{
+  "target": {
+    "id": "Function:packages/cli/src/templates/shared-hooks/trellis_hook_paths.py:find_trellis_root",
+    "name": "find_trellis_root",
+    "type": "Function",
+    "filePath": "packages/cli/src/templates/shared-hooks/trellis_hook_paths.py"
+  },
+  "direction": "upstream",
+  "impactedCount": 20,
+  "risk": "CRITICAL",
+  "riskSharedAxes": "MEDIUM",
+  "riskScale": {
+    "comparableAcrossKinds": true,
+    "unusedAxes": []
+  },
+  "epistemic": "exact",
+  "summary": {
+    "direct": 8,
+    "processes_affected": 8,
+    "modules_affected": 2
+  },
+  "byDepthCounts": {
+    "1": 8,
+    "2": 9,
+    "3": 3
+  },
+  "affected_processes": [
+    {
+      "name": "main",
+      "type": "Function",
+      "filePath": "packages/cli/src/templates/shared-hooks/inject-subagent-context.py",
+      "affected_process_count": 5,
+      "total_hits": 9,
+      "earliest_broken_step": 1
+    },
+    {
+      "name": "main",
+      "type": "Function",
+      "filePath": "packages/cli/src/templates/claude/hooks/statusline.py",
+      "affected_process_count": 5,
+      "total_hits": 6,
+      "earliest_broken_step": 1
+    },
+    {
+      "name": "main",
+      "type": "Function",
+      "filePath": "packages/cli/src/templates/shared-hooks/inject-shell-session-context.py",
+      "affected_process_count": 4,
+      "total_hits": 5,
+      "earliest_broken_step": 1
+    },
+    {
+      "name": "main",
+      "type": "Function",
+      "filePath": "packages/cli/src/templates/snow/hooks/write-trellis-context.py",
+      "affected_process_count": 3,
+      "total_hits": 3,
+      "earliest_broken_step": 1
+    },
+    {
+      "name": "main",
+      "type": "Function",
+      "filePath": "packages/cli/src/templates/codex/hooks/session-start.py",
+      "affected_process_count": 2,
+      "total_hits": 2,
+      "earliest_broken_step": 1
+    },
+    {
+      "name": "main",
+      "type": "Function",
+      "filePath": "packages/cli/src/templates/copilot/hooks/session-start.py",
+      "affected_process_count": 2,
+      "total_hits": 2,
+      "earliest_broken_step": 1
+    },
+    {
+      "name": "main",
+      "type": "Function",
+      "filePath": "packages/cli/src/templates/shared-hooks/inject-workflow-state.py",
+      "affected_process_count": 2,
+      "total_hits": 2,
+      "earliest_broken_step": 1
+    },
+    {
+      "name": "main",
+      "type": "Function",
+      "filePath": "packages/cli/src/templates/shared-hooks/session-start.py",
+      "affected_process_count": 2,
+      "total_hits": 2,
+      "earliest_broken_step": 1
+    }
+  ],
+  "affected_modules": [
+    {
+      "name": "Shared-hooks",
+      "hits": 7,
+      "impact": "direct"
+    },
+    {
+      "name": "Hooks",
+      "hits": 5,
+      "impact": "direct"
+    }
+  ]
+}

@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
+import time
+from contextlib import suppress
 from pathlib import Path
-
 
 JSON_READ_MISSING = "missing"
 JSON_READ_INVALID = "invalid"
@@ -143,18 +145,23 @@ def write_text_atomic(path: Path, text: str) -> bool:
             raise
         with f:
             f.write(text)
-        os.replace(tmp, path)
+        # Windows antivirus/indexer handles can briefly block replacement.
+        # Match the channel sidecar retry budget: 10 retries, 550 ms total.
+        for attempt in range(11):
+            try:
+                os.replace(tmp, path)
+                break
+            except PermissionError:
+                if sys.platform != "win32" or attempt >= 10:
+                    raise
+                time.sleep((attempt + 1) / 100)
         return True
     except OSError:
-        try:
+        with suppress(OSError):
             os.unlink(tmp)
-        except OSError:
-            pass
         return False
     except BaseException:
         # Ctrl-C mid-write: drop the temp file, then let the interrupt through.
-        try:
+        with suppress(OSError):
             os.unlink(tmp)
-        except OSError:
-            pass
         raise

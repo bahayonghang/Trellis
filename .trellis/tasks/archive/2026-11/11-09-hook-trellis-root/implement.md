@@ -1,0 +1,19 @@
+# Execution plan
+
+- [x] Review #650 metadata/diff and inventory all platform Python root walkers; record why the narrower upstream predicate/Windows skip/dogfood overwrite are not adopted.
+- [x] Persist root, compatibility, no-root side-effect and support-asset boundaries in design; curate real implement/check context before activation.
+- [x] Snapshot relevant dogfood bytes/hashes and ordinary valid-root output controls; force-refresh approved GitNexus index. Run upstream impact plus source/caller inspection BEFORE editing existing symbols and warn for HIGH/CRITICAL scope.
+- [x] Add and run RED real-process regressions, including Claude/native Codex context selection and all-consumer invalid-marker/no-root behavior. No new skips or larger budgets.
+- [x] Implement the canonical root helper and narrow consumer adapters. Preserve caller hint precedence, normalization, task resolver policy and realpath containment. Gate no-root writes/output.
+- [x] Deliver the second support asset everywhere via existing collectors; mirror only pre-matched dogfood consumers and add helper copies. Adapt only fixtures that intentionally lacked newly-required valid markers.
+- [x] GREEN focused suites plus strict test TypeScript; actual Python 3.9 compile, common/consumer/helper parity and preserved drift hashes; ordinary-root protocol parity.
+- [x] Verify built init/update/hash receipts, packaging, deletion preservation and uninstall ownership for all twelve hook platforms, optional statusline and ZCode direct provider.
+- [x] Run all five required checks under uv: lint, typecheck, CLI lint:py, build, full tests. Changed-path direct validators pass; no callable active LSP interface was exposed. HEAD comparisons classify inherited style findings (see verification.md).
+- [x] Assess/update executable spec via trellis-update-spec; record exact RED/GREEN and residual OS evidence in PRD/research.
+- [x] Independent trellis-check: reproduced/fixed per-candidate permission-error abort (2 RED regressions), made four evidence runners archive-location independent, protected snapshot publication with exclusive creation; added 2 CP1252 SessionStart controls. Fresh focused 185/1 existing skip; full core 401/2 and CLI 2,031/35 existing skips. Five serialized gates, direct types/3.9 compile, preservation and rebuilt distribution pass. See `research/verification.md` independent-review section.
+- [x] Second independent trellis-check: main-confirmed internal marker stat error could still hide a valid sibling and select the parent. Three persistent tests first gave 2 RED / 1 parent-control pass, then all GREEN after marker-local error handling in the canonical helper and its three mirrors only. Root 34 passes; focused 188/1 existing skip; core 401/2 and CLI 2,034/35 existing skips. All five serialized gates, strict test TS, direct Python types, 84-file 3.9 compile, 86 preserved hashes and refreshed twelve-platform distribution/835-entry packaging checks pass. Permission behavior uses isolated stdlib Path fault injection, not real ACLs; native POSIX remains pending. See second-review evidence.
+- [x] Main-session final staged detection: 49 files, 33 symbols, 25 expected hook/support flows, CRITICAL within the warned scope. Commit `2248f9ad` includes `Ported from mindfold-ai/Trellis#650`; real pre-commit lint/full tests passed. No push/amend/hook bypass.
+
+Archive handoff: normal scoped `task.py archive`, separately from the implementation commit.
+
+Stop before implementing task #7's launcher choice: present its design to the user first, and never run billed Codex/Claude sessions without approval.

@@ -3,6 +3,13 @@
 // instead of picking up whatever the dev's terminal happens to export.
 delete process.env.TRELLIS_CONTEXT_ID;
 
+// Pi template tests copy process.env into their sandbox. Host identity and
+// parent-routing keys must not override fixtures or the no-session fallback.
+// Tests exercising these overrides still supply their own env explicitly.
+delete process.env.PI_SESSION_ID;
+delete process.env.PI_SESSIONID;
+delete process.env.PI_SUBAGENT_PARENT_SESSION;
+
 // Strip CLAUDE_ENV_FILE: session-start.py appends `export TRELLIS_CONTEXT_ID=…`
 // to it, so a dev running the suite inside a Claude Code session would write
 // test fixture keys into their own real shell setup file.

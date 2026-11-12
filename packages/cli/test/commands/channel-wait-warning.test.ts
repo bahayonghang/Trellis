@@ -43,7 +43,15 @@ function teardown(env: TmpEnv): void {
   else process.env.TRELLIS_CHANNEL_ROOT = env.oldRoot;
   if (env.oldProject === undefined) delete process.env.TRELLIS_CHANNEL_PROJECT;
   else process.env.TRELLIS_CHANNEL_PROJECT = env.oldProject;
-  fs.rmSync(env.tmpDir, { recursive: true, force: true });
+  // scheduleSupervisorTimeoutWarning appends fire-and-forget: a test sees the
+  // warning line while the append is still writing the .seq sidecar, so the
+  // directory can gain a file mid-removal (ENOTEMPTY, seen on Windows).
+  fs.rmSync(env.tmpDir, {
+    recursive: true,
+    force: true,
+    maxRetries: 10,
+    retryDelay: 20,
+  });
 }
 
 async function waitForWarning(

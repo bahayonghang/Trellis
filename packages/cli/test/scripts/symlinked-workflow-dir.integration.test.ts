@@ -64,6 +64,7 @@ function runHookProbe(repo: string, code: string): string {
 import sys, importlib.util
 sys.argv[0] = ${JSON.stringify(path.join(repo, "hook.py"))}
 REPO_ROOT = ${JSON.stringify(repo)}
+sys.path.insert(0, ${JSON.stringify(path.dirname(HOOK_PATH))})
 spec = importlib.util.spec_from_file_location("h", ${JSON.stringify(HOOK_PATH)})
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)

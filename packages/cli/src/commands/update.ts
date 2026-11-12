@@ -35,6 +35,11 @@ import { compareVersions } from "../utils/compare-versions.js";
 import { toPosix } from "../utils/posix.js";
 import { setupProxy } from "../utils/proxy.js";
 import { emptyTaskJson } from "../utils/task-json.js";
+import {
+  addLocalHooksIgnoreRule,
+  planLocalHooksGitignore,
+  TRELLIS_GITIGNORE_PATH,
+} from "../utils/local-hooks-gitignore.js";
 
 // Import templates for comparison
 import {
@@ -59,7 +64,11 @@ import {
   collectPlatformTemplates,
 } from "../configurators/index.js";
 import { replacePythonCommandLiterals } from "../configurators/shared.js";
-import { preserveCodexAgentModelKeys } from "../configurators/codex.js";
+import {
+  preserveCodexAgentModelKeys,
+  CODEX_HOOKS_PATH,
+  planCodexHooksUpgrade,
+} from "../configurators/codex.js";
 import { printZcodeSetupHint } from "../configurators/zcode.js";
 import { ensureGitattributes } from "../configurators/workflow.js";
 import { pruneOrphanManifestKeys } from "../utils/manifest-prune.js";
@@ -99,6 +108,7 @@ interface FileChange {
   relativePath: string;
   newContent: string;
   status: "new" | "unchanged" | "changed";
+  codexHooksManualReason?: string;
 }
 
 interface ChangeAnalysis {
@@ -954,8 +964,16 @@ async function collectTemplateFiles(
     }
   }
 
+  // Plan only after update.skip filtering; never read or replace a linked path.
+  if (files.has(TRELLIS_GITIGNORE_PATH)) {
+    const gitignore = planLocalHooksGitignore(cwd);
+    if (gitignore === null) files.delete(TRELLIS_GITIGNORE_PATH);
+    else files.set(TRELLIS_GITIGNORE_PATH, gitignore);
+  }
+
   // Apply python3→python replacement for Windows consistency with init-time writes
   for (const [filePath, content] of files) {
+    if (filePath === TRELLIS_GITIGNORE_PATH) continue;
     files.set(filePath, replacePythonCommandLiterals(content));
   }
 
@@ -995,6 +1013,40 @@ function analyzeChanges(
       status: "new",
     };
 
+    if (relativePath === CODEX_HOOKS_PATH) {
+      const stat = fs.lstatSync(fullPath, { throwIfNoEntry: false });
+      if (stat && (stat.isSymbolicLink() || !stat.isFile())) {
+        change.status = "changed";
+        change.codexHooksManualReason = "linked or nonregular configuration";
+        console.warn(
+          `Manual review required for ${relativePath}: ${change.codexHooksManualReason}.`,
+        );
+        result.changedFiles.push(change);
+        continue;
+      }
+      if (stat) {
+        const existingContent = fs.readFileSync(fullPath, "utf-8");
+        const plan = planCodexHooksUpgrade(existingContent, newContent);
+        if (plan.kind === "manual") {
+          change.status = "changed";
+          change.codexHooksManualReason = plan.reason;
+          console.warn(
+            `Manual review required for ${relativePath}: ${plan.reason}.`,
+          );
+          result.changedFiles.push(change);
+          continue;
+        }
+        if (plan.kind === "migrate") {
+          change.status = "changed";
+          change.newContent = plan.content;
+          result.autoUpdateFiles.push(change);
+          continue;
+        }
+        // User entries/deletions are not an unchanged template or a hash repair.
+        if (existingContent !== newContent) continue;
+      }
+    }
+
     if (!exists) {
       const storedHash = hashes[relativePath];
       if (storedHash) {
@@ -1016,6 +1068,8 @@ function analyzeChanges(
         const currentHash = computeHash(existingContent);
 
         if (
+          (relativePath === TRELLIS_GITIGNORE_PATH &&
+            newContent === addLocalHooksIgnoreRule(existingContent)) ||
           (storedHash && storedHash === currentHash) ||
           (!storedHash &&
             isKnownUntrackedTemplate(relativePath, existingContent)) ||
@@ -2663,6 +2717,17 @@ export async function update(options: UpdateOptions): Promise<void> {
     const applyToAll: { action: ConflictAction | null } = { action: null };
 
     for (const file of changes.changedFiles) {
+      if (file.codexHooksManualReason) {
+        console.warn(
+          `Kept ${file.relativePath}: ${file.codexHooksManualReason}; manual review required (--force cannot replace it).`,
+        );
+        if (options.createNew) {
+          fs.writeFileSync(file.path + ".new", file.newContent);
+          console.log(chalk.blue(`  ✓ Created: ${file.relativePath}.new`));
+          createdNew++;
+        } else skipped++;
+        continue;
+      }
       const action = await promptConflictResolution(file, options, applyToAll);
 
       if (action === "overwrite") {
@@ -2720,6 +2785,7 @@ export async function update(options: UpdateOptions): Promise<void> {
   }
   // Only hash overwritten files (not skipped or .new copies)
   for (const file of changes.changedFiles) {
+    if (file.codexHooksManualReason) continue;
     const fullPath = path.join(cwd, file.relativePath);
     if (fs.existsSync(fullPath)) {
       const content = fs.readFileSync(fullPath, "utf-8");
@@ -2729,6 +2795,10 @@ export async function update(options: UpdateOptions): Promise<void> {
     }
   }
   if (filesToHash.size > 0) {
+    // Init deliberately excludes mixed-ownership ignore files from the receipt.
+    if (hashes[TRELLIS_GITIGNORE_PATH] === undefined) {
+      filesToHash.delete(TRELLIS_GITIGNORE_PATH);
+    }
     updateHashes(cwd, filesToHash);
   }
 

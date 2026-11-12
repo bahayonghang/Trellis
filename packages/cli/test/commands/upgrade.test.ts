@@ -1,11 +1,79 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import {
   buildUpgradeCommand,
+  findCheckoutRoot,
   resolveUpgradeTag,
   upgrade,
 } from "../../src/commands/upgrade.js";
 
 describe("upgrade command", () => {
+  const originalPlatform = process.platform;
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "trellis-upgrade-"));
+  });
+
+  afterEach(() => {
+    Object.defineProperty(process, "platform", { value: originalPlatform });
+    vi.restoreAllMocks();
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  function moduleFixture(relativePath: string): string {
+    const modulePath = path.join(tempDir, relativePath);
+    fs.mkdirSync(path.dirname(modulePath), { recursive: true });
+    fs.writeFileSync(modulePath, "// CLI module fixture\n");
+    return modulePath;
+  }
+
+  function checkoutFixture(): string {
+    fs.mkdirSync(path.join(tempDir, ".git"));
+    return moduleFixture("packages/cli/dist/commands/upgrade.js");
+  }
+
+  it("detects a checkout from the module path rather than cwd", () => {
+    const modulePath = checkoutFixture();
+    vi.spyOn(process, "cwd").mockReturnValue(os.tmpdir());
+    expect(findCheckoutRoot(modulePath)).toBe(fs.realpathSync(tempDir));
+  });
+
+  it("recognizes a worktree .git file", () => {
+    fs.writeFileSync(
+      path.join(tempDir, ".git"),
+      "gitdir: ../git/worktrees/demo\n",
+    );
+    expect(findCheckoutRoot(moduleFixture("dist/commands/upgrade.js"))).toBe(
+      fs.realpathSync(tempDir),
+    );
+  });
+
+  it("keeps npm installations exempt inside a checkout ancestor", () => {
+    fs.mkdirSync(path.join(tempDir, ".git"));
+    expect(
+      findCheckoutRoot(
+        moduleFixture(
+          "node_modules/@mindfoldhq/trellis/dist/commands/upgrade.js",
+        ),
+      ),
+    ).toBeNull();
+  });
+
+  it("does not treat cwd as the installation checkout", () => {
+    const modulePath = moduleFixture("dist/commands/upgrade.js");
+    vi.spyOn(process, "cwd").mockReturnValue(path.resolve(__dirname, "../.."));
+    expect(findCheckoutRoot(modulePath)).toBeNull();
+  });
+
+  // upgrade() builds its plan for process.platform; the POSIX assertions
+  // below would see cmd.exe and `where trellis` on a Windows host.
+  function mockPlatform(platform: NodeJS.Platform): void {
+    Object.defineProperty(process, "platform", { value: platform });
+  }
+
   it("defaults stable versions to latest", () => {
     expect(resolveUpgradeTag("0.5.12")).toBe("latest");
   });
@@ -63,9 +131,18 @@ describe("upgrade command", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const runner = vi.fn();
 
-    await upgrade({ dryRun: true, tag: "latest" }, runner);
+    await upgrade(
+      { dryRun: true, tag: "latest" },
+      runner,
+      moduleFixture(
+        "node_modules/@mindfoldhq/trellis/dist/commands/upgrade.js",
+      ),
+    );
 
     expect(runner).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining("CLI source: package installation"),
+    );
     expect(log).toHaveBeenCalledWith(
       expect.stringContaining("Run: npm install -g @mindfoldhq/trellis@latest"),
     );
@@ -73,11 +150,74 @@ describe("upgrade command", () => {
     log.mockRestore();
   });
 
+  it("refuses a checkout upgrade before executing npm", async () => {
+    const runner = vi.fn(() => ({ status: 0, signal: null }));
+
+    await expect(
+      upgrade({ tag: "latest" }, runner, checkoutFixture()),
+    ).rejects.toThrow(
+      /git pull[\s\S]*just build[\s\S]*just install[\s\S]*--force-npm/,
+    );
+
+    expect(runner).not.toHaveBeenCalled();
+  });
+
+  it("reports checkout blocking in dry-run without executing npm", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const runner = vi.fn();
+
+    await upgrade({ dryRun: true }, runner, checkoutFixture());
+
+    expect(runner).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining("CLI source: git checkout"),
+    );
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining("npm installation would be blocked"),
+    );
+  });
+
+  it("allows an explicit checkout override", async () => {
+    mockPlatform("linux");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const runner = vi.fn(() => ({ status: 0, signal: null }));
+
+    await upgrade({ forceNpm: true, tag: "latest" }, runner, checkoutFixture());
+
+    expect(runner).toHaveBeenCalledWith(
+      "npm",
+      ["install", "-g", "@mindfoldhq/trellis@latest"],
+      { stdio: "inherit", shell: false },
+    );
+  });
+
+  it("reports a forced checkout dry-run without executing npm", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const runner = vi.fn();
+
+    await upgrade({ forceNpm: true, dryRun: true }, runner, checkoutFixture());
+
+    expect(runner).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining("--force-npm: replacing"),
+    );
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining("Run: npm install -g"),
+    );
+  });
+
   it("executes npm install for real upgrades", async () => {
+    mockPlatform("linux");
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const runner = vi.fn(() => ({ status: 0, signal: null }));
 
-    await upgrade({ tag: "latest" }, runner);
+    await upgrade(
+      { tag: "latest" },
+      runner,
+      moduleFixture(
+        "node_modules/@mindfoldhq/trellis/dist/commands/upgrade.js",
+      ),
+    );
 
     expect(runner).toHaveBeenCalledWith(
       "npm",
@@ -93,10 +233,19 @@ describe("upgrade command", () => {
   });
 
   it("fails when npm exits non-zero", async () => {
+    mockPlatform("linux");
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const runner = vi.fn(() => ({ status: 1, signal: null }));
 
-    await expect(upgrade({ tag: "latest" }, runner)).rejects.toThrow(
+    await expect(
+      upgrade(
+        { tag: "latest" },
+        runner,
+        moduleFixture(
+          "node_modules/@mindfoldhq/trellis/dist/commands/upgrade.js",
+        ),
+      ),
+    ).rejects.toThrow(
       /npm install failed with exit code 1\.[\s\S]*Troubleshooting:[\s\S]*Manual command: npm install -g @mindfoldhq\/trellis@latest[\s\S]*npm config get prefix[\s\S]*which trellis/,
     );
 

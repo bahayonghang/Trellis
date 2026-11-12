@@ -44,7 +44,7 @@ Code contributions are welcome for:
 
 - Node.js 18.0.0+
 - pnpm
-- Python 3 (for hooks)
+- uv (creates the checkout's Python 3.9 development environment)
 - Bash (for scripts)
 
 ### Getting Started
@@ -60,7 +60,15 @@ Code contributions are welcome for:
 3. **Install dependencies**
    ```bash
    pnpm install
+   uv sync --locked
+   uv run python --version
    ```
+
+   `.python-version` pins this checkout to Python 3.9 so local checks use the
+   minimum supported interpreter. `uv sync` creates `.venv` and downloads that
+   interpreter if needed. The Python scripts use only the standard library;
+   `pyproject.toml` does not define a distributable package. TypeScript tools
+   and basedpyright remain managed by pnpm.
 
 4. **Build the project**
    ```bash
@@ -70,13 +78,18 @@ Code contributions are welcome for:
 ### Running Checks
 
 ```bash
-pnpm lint        # ESLint for TypeScript
-pnpm lint:py     # Type checking for Python (basedpyright)
-pnpm lint:all    # Run both
-pnpm typecheck   # TypeScript type checking
+pnpm lint                                        # ESLint for TypeScript
+pnpm --filter @mindfoldhq/trellis lint:py          # Python type checking
+pnpm typecheck                                   # TypeScript type checking
+uv run pnpm test                                 # Tests with Python 3.9 on PATH
 ```
 
-> **Note:** Pre-commit hooks will automatically run `eslint --fix` and `prettier --write` on staged `.ts` files.
+> **Note:** Pre-commit hooks format staged TypeScript files and run the full test suite. Use `uv run git commit ...` to run the hook with Python 3.9.
+
+Run workflow scripts as `uv run python .trellis/scripts/task.py ...` on every
+platform. `uv run` selects `.venv`; plain `python` or `pnpm test` outside an
+activated environment can still select a system interpreter. The
+`pythonVersion` in `pyrightconfig.json` controls static checking only.
 
 ## Project Structure
 

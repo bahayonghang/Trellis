@@ -61,6 +61,7 @@ from .safe_commit import (
     safe_git_add,
 )
 from .task_utils import (
+    active_task_conflict,
     archive_destination_for,
     archive_task_complete,
     find_task_by_name,
@@ -68,7 +69,6 @@ from .task_utils import (
     resolve_task_dir,
     run_task_hooks,
 )
-
 
 # =============================================================================
 # Helper Functions
@@ -363,7 +363,7 @@ def cmd_create(args: argparse.Namespace) -> int:
     if not is_monorepo(repo_root):
         # Single-repo: ignore --package, no package prefix
         if package:
-            print(colored(f"Warning: --package ignored in single-repo project", Colors.YELLOW), file=sys.stderr)
+            print(colored("Warning: --package ignored in single-repo project", Colors.YELLOW), file=sys.stderr)
         package = None
     elif package:
         if not validate_package(package, repo_root):
@@ -624,7 +624,8 @@ def cmd_create(args: argparse.Namespace) -> int:
         print(colored(f"Linked as child of: {parent_dir.name}", Colors.GREEN), file=sys.stderr)
 
     # Auto-activate the new task so the per-turn breadcrumb fires planning
-    # state. Best-effort: gracefully degrade if no session identity (CLI run
+    # state unless unfinished work is already active. Best-effort: gracefully
+    # degrade if no session identity (CLI run
     # outside an AI session) — the task is still created, the user can run
     # task.py start later. Pointer is session-scoped so this never affects
     # other AI sessions.
@@ -661,14 +662,26 @@ def cmd_create(args: argparse.Namespace) -> int:
                     except ValueError:
                         rel_dir = str(task_dir)
                     try:
-                        active = set_active_task(rel_dir, repo_root)
+                        previous_task = active_task_conflict(task_dir, repo_root)
+                        active = None if previous_task else set_active_task(rel_dir, repo_root)
                     except Exception as exc:
                         print(
                             colored(f"Warning: session activation failed (pointer persistence: {exc})", Colors.YELLOW),
                             file=sys.stderr,
                         )
                     else:
-                        if active:
+                        if previous_task:
+                            print(
+                                colored(f"Kept active task for this session: {previous_task}", Colors.YELLOW),
+                                file=sys.stderr,
+                            )
+                            python_cmd = "python" if sys.platform == "win32" else "python3"
+                            print(
+                                f"To switch explicitly, run: {python_cmd} {DIR_WORKFLOW}/scripts/task.py "
+                                f'start "{rel_dir}"',
+                                file=sys.stderr,
+                            )
+                        elif active:
                             print(
                                 colored(f"Activated task for this session: {active.task_path}", Colors.GREEN),
                                 file=sys.stderr,
@@ -1296,6 +1309,13 @@ def cmd_archive(args: argparse.Namespace) -> int:
             Colors.RED), file=sys.stderr)
         return 1
 
+    from .verification import archive_verification_error
+    verification_error = archive_verification_error(task_dir, repo_root)
+    if verification_error:
+        print(colored(f"Error: {verification_error}", Colors.RED), file=sys.stderr)
+        print("Not archived; run task.py verify and inspect verification-status.", file=sys.stderr)
+        return 1
+
     # Check the destination before anything below mutates task state. The
     # mover refuses a collision too, but by then this command has already
     # marked the task completed, re-parented its children and cleared the
@@ -1437,17 +1457,18 @@ def cmd_archive(args: argparse.Namespace) -> int:
         print(colored(f"Archived: {dir_name} -> archive/{year_month}/", Colors.GREEN), file=sys.stderr)
 
         # Auto-commit unless --no-commit
-        if not getattr(args, "no_commit", False):
-            if not _auto_commit_archive(dir_name, repo_root, modified_children):
-                print(
-                    colored(
-                        "Archive moved on disk, but git auto-commit did not complete. "
-                        "Resolve `git status` before continuing.",
-                        Colors.RED,
-                    ),
-                    file=sys.stderr,
-                )
-                return 1
+        if not getattr(args, "no_commit", False) and not _auto_commit_archive(
+            dir_name, repo_root, archive_dest, modified_children
+        ):
+            print(
+                colored(
+                    "Archive moved on disk, but git auto-commit did not complete. "
+                    "Resolve `git status` before continuing.",
+                    Colors.RED,
+                ),
+                file=sys.stderr,
+            )
+            return 1
 
         # Return the archive path
         print(f"{DIR_WORKFLOW}/{DIR_TASKS}/{DIR_ARCHIVE}/{year_month}/{dir_name}")
@@ -1463,14 +1484,15 @@ def cmd_archive(args: argparse.Namespace) -> int:
 def _auto_commit_archive(
     task_name: str,
     repo_root: Path,
+    archived_task_dir: Path,
     modified_children: list[str] | None = None,
 ) -> bool:
     """Stage Trellis-owned task paths and commit after archive.
 
     Scoped narrowly to the archived task's source + destination paths
     plus any child task dirs whose ``task.json`` was edited (parent →
-    children relationship update). Dirty changes in OTHER active task
-    dirs are NOT bundled into the archive commit.
+    children relationship update). Dirty changes in OTHER active or archived
+    task dirs are NOT bundled into the archive commit.
 
     If ``.gitignore`` blocks the paths, we warn + skip — we do NOT
     retry with ``git add -f``. The warning explicitly forbids
@@ -1496,7 +1518,10 @@ def _auto_commit_archive(
     source_was_tracked = rc == 0 and bool(tracked_out.strip())
 
     paths = safe_archive_paths_to_add(
-        repo_root, task_name=task_name, modified_children=modified_children
+        repo_root,
+        task_name=task_name,
+        modified_children=modified_children,
+        archived_task_dir=archived_task_dir,
     )
     if not paths:
         print("[OK] No task changes to commit.", file=sys.stderr)

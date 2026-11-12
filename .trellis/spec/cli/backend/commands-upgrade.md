@@ -13,12 +13,19 @@ This command is intentionally separate from `trellis update`:
 ## User-facing contract
 
 ```text
-trellis upgrade [--tag <tag-or-version>] [--dry-run]
+trellis upgrade [--tag <tag-or-version>] [--dry-run] [--force-npm]
 ```
 
 Behavior:
 
-- Builds and runs `npm install -g @mindfoldhq/trellis@<tag>`.
+- Package installations build and run `npm install -g @mindfoldhq/trellis@<tag>`.
+- A CLI running from a git checkout refuses npm installation by default. Detection
+  walks ancestors of the CLI module's real location, accepts a `.git` directory
+  or worktree file, and exempts paths under `node_modules`. The user's working
+  directory does not determine how the CLI is installed.
+- Checkout refusal recommends `git pull`, then `just build` or `just install`.
+- `--force-npm` explicitly allows replacing a checkout link with the official
+  npm package; it is not forwarded as npm's `--force` flag.
 - POSIX execution must spawn `npm` directly without shell execution.
 - Windows execution must route through `cmd.exe /d /s /c npm install -g ...`
   instead of directly spawning `npm.cmd`.
@@ -28,11 +35,12 @@ Behavior:
   - `-rc.*` versions install `@rc`
 - `--tag <tag-or-version>` overrides the inferred channel. Accept simple npm
   dist-tags or versions such as `latest`, `beta`, `rc`, or `0.6.0-beta.8`.
-- `--dry-run` prints the exact npm command and exits without changing anything.
+- `--dry-run` reports checkout detection and exits without changing anything.
+  A protected checkout reports that npm installation would be blocked; package
+  installations and explicit overrides print the exact npm command.
 
-The implementation does not detect or preserve the original installer. Trellis
-is published as an npm package, so npm is the upgrade backend even when the user
-installed Node through pnpm, Homebrew, Volta, proto, or another manager.
+Outside git checkouts, npm remains the upgrade backend regardless of which
+manager installed Node. The guard does not rewrite shims or install paths.
 
 ---
 
@@ -96,3 +104,7 @@ session-start update hints.
 - Windows `cmd.exe /d /s /c npm ...` command plan with `shell: false`.
 - Dry-run does not spawn npm.
 - Non-zero npm exit becomes a command failure with troubleshooting guidance.
+- Real filesystem fixtures cover checkout directories, worktree files, npm
+  `node_modules` paths inside checkout ancestors, and cwd independence.
+- Checkout mutation refuses before the npm runner is called; explicit override
+  invokes the unchanged npm command; both checkout dry-run branches never spawn.

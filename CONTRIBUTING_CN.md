@@ -44,7 +44,7 @@
 
 - Node.js 18.0.0+
 - pnpm
-- Python 3（用于 hooks）
+- uv（创建本仓库的 Python 3.9 开发环境）
 - Bash（用于脚本）
 
 ### 开始开发
@@ -60,7 +60,13 @@
 3. **安装依赖**
    ```bash
    pnpm install
+   uv sync --locked
+   uv run python --version
    ```
+
+   `.python-version` 将本仓库的开发解释器固定为 Python 3.9，与最低支持版本一致。
+   `uv sync` 创建 `.venv`，缺少解释器时会下载对应版本。Python 脚本只用标准库，
+   `pyproject.toml` 不定义可发布的 Python 包；TypeScript 工具和 basedpyright 仍由 pnpm 管理。
 
 4. **构建项目**
    ```bash
@@ -70,13 +76,17 @@
 ### 运行检查
 
 ```bash
-pnpm lint        # TypeScript ESLint 检查
-pnpm lint:py     # Python 类型检查 (basedpyright)
-pnpm lint:all    # 同时运行以上两者
-pnpm typecheck   # TypeScript 类型检查
+pnpm lint                                        # TypeScript ESLint 检查
+pnpm --filter @mindfoldhq/trellis lint:py          # Python 类型检查
+pnpm typecheck                                   # TypeScript 类型检查
+uv run pnpm test                                 # 用 Python 3.9 运行测试
 ```
 
-> **注意：** 提交时 pre-commit hook 会自动对暂存的 `.ts` 文件运行 `eslint --fix` 和 `prettier --write`。
+> **注意：** pre-commit hook 会格式化暂存的 TypeScript 文件，并运行完整测试。用 `uv run git commit ...` 可以让 hook 使用 Python 3.9。
+
+各平台均可通过 `uv run python .trellis/scripts/task.py ...` 运行工作流脚本。
+`uv run` 会选择 `.venv`；未激活环境时直接执行 `python` 或 `pnpm test`，仍可能使用系统解释器。
+`pyrightconfig.json` 中的 `pythonVersion` 只影响静态检查。
 
 ## 项目结构
 

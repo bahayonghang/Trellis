@@ -1,0 +1,108 @@
+[
+  {
+    "run_url": "https://github.com/bahayonghang/Trellis/actions/runs/43146333078",
+    "event": "push",
+    "source_head": "c8972b98a0ca686581587a515f4af7713d6c58e8",
+    "run_status": "completed",
+    "run_conclusion": "failure",
+    "job_id": 130944905755,
+    "name": "windows-latest / Node 26.7.0",
+    "job_url": "https://github.com/bahayonghang/Trellis/actions/runs/43146333078/job/130944905755",
+    "job_conclusion": "failure",
+    "checkout": [
+      "success"
+    ],
+    "python_setup": [
+      "success"
+    ],
+    "failed_steps": [
+      "Test (core + cli)"
+    ],
+    "test_summaries": [
+      "2026-11-12T03:11:40.4054729Z  Test Files  21 passed (21)\r",
+      "2026-11-12T03:11:40.4055694Z       Tests  403 passed | 2 skipped (405)\r",
+      "2026-11-12T03:14:54.0789394Z  Test Files  3 failed | 95 passed | 1 skipped (99)\r",
+      "2026-11-12T03:14:54.0790939Z       Tests  22 failed | 2250 passed | 35 skipped (2307)\r"
+    ],
+    "original_marketplace_sha_confirmed": true,
+    "native_assertion_present": false,
+    "local_log": "C:/Users/lyh/AppData/Local/Temp/trellis-runtime-ci-43146333078/130944905755.log",
+    "sha256": "f01bb30ee06f8fef3618cc1452ad2e595b9e2f76c5e3926cfb7c485e325459c3"
+  },
+  {
+    "run_url": "https://github.com/bahayonghang/Trellis/actions/runs/43146333078",
+    "event": "push",
+    "source_head": "c8972b98a0ca686581587a515f4af7713d6c58e8",
+    "run_status": "completed",
+    "run_conclusion": "failure",
+    "job_id": 130944906101,
+    "name": "windows-latest / Node 18.17.0",
+    "job_url": "https://github.com/bahayonghang/Trellis/actions/runs/43146333078/job/130944906101",
+    "job_conclusion": "success",
+    "checkout": [
+      "success"
+    ],
+    "python_setup": [
+      "success"
+    ],
+    "failed_steps": [],
+    "test_summaries": [],
+    "original_marketplace_sha_confirmed": true,
+    "native_assertion_present": false,
+    "local_log": "C:/Users/lyh/AppData/Local/Temp/trellis-runtime-ci-43146333078/130944906101.log",
+    "sha256": "f93074423b06485ec105b4186c5729c893a504c63dfdb6f41cee7f052b017049"
+  },
+  {
+    "run_url": "https://github.com/bahayonghang/Trellis/actions/runs/43146333078",
+    "event": "push",
+    "source_head": "c8972b98a0ca686581587a515f4af7713d6c58e8",
+    "run_status": "completed",
+    "run_conclusion": "failure",
+    "job_id": 130944906124,
+    "name": "ubuntu-24.04 / Node 18.17.0",
+    "job_url": "https://github.com/bahayonghang/Trellis/actions/runs/43146333078/job/130944906124",
+    "job_conclusion": "success",
+    "checkout": [
+      "success"
+    ],
+    "python_setup": [
+      "success"
+    ],
+    "failed_steps": [],
+    "test_summaries": [],
+    "original_marketplace_sha_confirmed": true,
+    "native_assertion_present": false,
+    "local_log": "C:/Users/lyh/AppData/Local/Temp/trellis-runtime-ci-43146333078/130944906124.log",
+    "sha256": "fb4257c60f82c8d3ccef59cbba581b4bbe4665a0822ceebb36d03abfee01e605"
+  },
+  {
+    "run_url": "https://github.com/bahayonghang/Trellis/actions/runs/43146333078",
+    "event": "push",
+    "source_head": "c8972b98a0ca686581587a515f4af7713d6c58e8",
+    "run_status": "completed",
+    "run_conclusion": "failure",
+    "job_id": 130944906136,
+    "name": "ubuntu-24.04 / Node 26.7.0",
+    "job_url": "https://github.com/bahayonghang/Trellis/actions/runs/43146333078/job/130944906136",
+    "job_conclusion": "failure",
+    "checkout": [
+      "success"
+    ],
+    "python_setup": [
+      "success"
+    ],
+    "failed_steps": [
+      "Test (core + cli)"
+    ],
+    "test_summaries": [
+      "2026-11-12T03:10:53.4019953Z  Test Files  21 passed (21)",
+      "2026-11-12T03:10:53.4020839Z       Tests  404 passed | 1 skipped (405)",
+      "2026-11-12T03:12:15.6431507Z  Test Files  2 failed | 97 passed (99)",
+      "2026-11-12T03:12:15.6441295Z       Tests  4 failed | 2270 passed (2274)"
+    ],
+    "original_marketplace_sha_confirmed": true,
+    "native_assertion_present": false,
+    "local_log": "C:/Users/lyh/AppData/Local/Temp/trellis-runtime-ci-43146333078/130944906136.log",
+    "sha256": "0f8854be9c5904ca11d82cc8dd243215a40877708d20a6350f21ff186f13eb18"
+  }
+]

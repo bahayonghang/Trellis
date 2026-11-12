@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -11,6 +13,7 @@ import {
   eventsPath,
   seqSidecarPath,
 } from "../../src/channel/internal/store/paths.js";
+import { writeSidecar } from "../../src/channel/internal/store/seq.js";
 import { setupChannelTmp, type TmpEnv } from "./setup.js";
 
 describe("appendEvent + .seq sidecar", () => {
@@ -178,5 +181,63 @@ describe("appendEvent + .seq sidecar", () => {
       process.env.TRELLIS_CHANNEL_PROJECT ?? "",
     );
     expect(fs.statSync(file).size).toBeGreaterThan(4096);
+  });
+});
+
+describe("writeSidecar rename retry", () => {
+  const originalPlatform = process.platform;
+  let dir: string;
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "trellis-seq-retry-"));
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    Object.defineProperty(process, "platform", { value: originalPlatform });
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  function mockPlatform(platform: NodeJS.Platform): void {
+    Object.defineProperty(process, "platform", { value: platform });
+  }
+
+  function renameError(code: string): Error {
+    return Object.assign(new Error(`${code}: simulated`), { code });
+  }
+
+  it("retries a transient EPERM on Windows", async () => {
+    mockPlatform("win32");
+    const rename = vi
+      .spyOn(fsp, "rename")
+      .mockImplementationOnce(() => Promise.reject(renameError("EPERM")));
+    const sidecar = path.join(dir, ".seq");
+
+    await writeSidecar(sidecar, 7);
+
+    expect(rename).toHaveBeenCalledTimes(2);
+    expect(fs.readFileSync(sidecar, "utf-8")).toBe("7\n");
+  });
+
+  it("does not retry outside Windows", async () => {
+    mockPlatform("linux");
+    const rename = vi
+      .spyOn(fsp, "rename")
+      .mockImplementationOnce(() => Promise.reject(renameError("EPERM")));
+
+    await expect(writeSidecar(path.join(dir, ".seq"), 7)).rejects.toThrow(
+      "EPERM: simulated",
+    );
+    expect(rename).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives up after the retry budget on Windows", async () => {
+    mockPlatform("win32");
+    const rename = vi
+      .spyOn(fsp, "rename")
+      .mockImplementation(() => Promise.reject(renameError("EBUSY")));
+
+    await expect(writeSidecar(path.join(dir, ".seq"), 7)).rejects.toThrow(
+      "EBUSY: simulated",
+    );
+    expect(rename).toHaveBeenCalledTimes(11);
   });
 });

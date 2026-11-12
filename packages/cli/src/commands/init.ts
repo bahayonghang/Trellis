@@ -18,6 +18,7 @@ import {
   setResolvedPythonCommand,
 } from "../configurators/shared.js";
 import { AI_TOOLS, type CliFlag } from "../types/ai-tools.js";
+import { CODEX_HOOKS_PATH } from "../configurators/codex.js";
 import { DIR_NAMES, FILE_NAMES, PATHS } from "../constants/paths.js";
 import { VERSION } from "../constants/version.js";
 import { agentsMdContent } from "../templates/markdown/index.js";
@@ -36,7 +37,12 @@ import {
   type ProjectType,
   type DetectedPackage,
 } from "../utils/project-detector.js";
-import { initializeHashes, removeHash } from "../utils/template-hash.js";
+import {
+  initializeHashes,
+  removeHash,
+  loadHashes,
+  saveHashes,
+} from "../utils/template-hash.js";
 import {
   NATIVE_WORKFLOW_ID,
   resolveWorkflowTemplate,
@@ -1910,6 +1916,9 @@ export async function init(options: InitOptions): Promise<void> {
   // platform/root entries — replacing the previous "walk every managed dir"
   // approach that swept user-owned runtime files into the manifest
   // (.codex/sessions/, .claude/projects/, pre-existing AGENTS.md).
+  const previousCodexHooksHash = tools.includes(AI_TOOLS.codex.cliFlag)
+    ? loadHashes(cwd)[CODEX_HOOKS_PATH]
+    : undefined;
   const writtenPaths = startRecordingWrites(cwd);
   try {
     // Create workflow structure with project type
@@ -1970,6 +1979,16 @@ export async function init(options: InitOptions): Promise<void> {
 
   // Initialize template hashes for modification tracking
   const hashedCount = initializeHashes(cwd, { trackedPaths: writtenPaths });
+  // Protected Codex config retains only an existing claim when this invocation
+  // selected Codex but its narrow planner/writer left hooks.json untouched.
+  if (
+    previousCodexHooksHash !== undefined &&
+    !writtenPaths.has(CODEX_HOOKS_PATH)
+  ) {
+    const hashes = loadHashes(cwd);
+    hashes[CODEX_HOOKS_PATH] = previousCodexHooksHash;
+    saveHashes(cwd, hashes);
+  }
   if (useRemoteTemplate) {
     const specFilesToHash = new Map<string, string>();
     for (const relativePath of collectSpecPaths(cwd)) {

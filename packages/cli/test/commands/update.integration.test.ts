@@ -744,6 +744,78 @@ describe("update() integration", () => {
     expect(fs.readFileSync(newFile, "utf-8")).toBe(templateContent);
   });
 
+  it.each(["dry-run", "create-new"] as const)(
+    "#7b TL05 add-platform init keeps local edits user-modified during update (%s)",
+    async (mode) => {
+      // Match the reported add-platform entry path, without force/skipExisting.
+      // The developer ensures bootstrap exists, avoiding aborted-init recovery.
+      await init({ yes: true, cursor: true, user: "alice" });
+      const originalHashes = readHashesV2(hashFilePath());
+      const templates = new Map<string, string>();
+      const customized = new Map<string, string>();
+      for (const relativePath of [
+        ".trellis/workflow.md",
+        ".trellis/config.yaml",
+        MANAGED_FILE,
+      ]) {
+        const template = readProjectFile(relativePath);
+        const content = template + "\r\n# local customization 本地配置\r\n";
+        templates.set(relativePath, template);
+        customized.set(relativePath, content);
+        writeProjectFile(relativePath, content);
+      }
+
+      await init({ yes: true, dsh: true });
+      vi.mocked(console.log).mockClear();
+      vi.mocked(inquirer.prompt).mockClear();
+
+      if (mode === "dry-run") {
+        const snapshot = (): Map<string, Buffer> => {
+          const files = new Map<string, Buffer>();
+          const walk = (dir: string): void => {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const fullPath = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(fullPath);
+              else
+                files.set(
+                  path.relative(tmpDir, fullPath),
+                  fs.readFileSync(fullPath),
+                );
+            }
+          };
+          walk(tmpDir);
+          return files;
+        };
+        const before = snapshot();
+
+        await update({ dryRun: true });
+
+        expect(snapshot()).toEqual(before);
+        const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+        expect(output).toContain("Modified by you (need your decision):");
+        for (const relativePath of customized.keys()) {
+          expect(output).toContain(`? ${relativePath}`);
+          expect(output).not.toContain(`↑ ${relativePath}`);
+        }
+      } else {
+        await update({ createNew: true });
+
+        for (const [relativePath, content] of customized) {
+          expect(fs.readFileSync(projectFile(relativePath))).toEqual(
+            Buffer.from(content),
+          );
+          expect(fs.readFileSync(projectFile(`${relativePath}.new`))).toEqual(
+            Buffer.from(templates.get(relativePath) ?? ""),
+          );
+          expect(readHashesV2(hashFilePath())[relativePath]).toBe(
+            originalHashes[relativePath],
+          );
+        }
+      }
+      expect(inquirer.prompt).not.toHaveBeenCalled();
+    },
+  );
+
   it("#8 updates version file after successful update", async () => {
     await setupProject();
 

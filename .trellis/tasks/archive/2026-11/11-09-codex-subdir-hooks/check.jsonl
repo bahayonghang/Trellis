@@ -1,0 +1,4 @@
+{"file":".trellis/spec/cli/backend/platform-integration.md","reason":"Review Codex-specific hook changes"}
+{"file":".trellis/spec/cli/backend/commands-update.md","reason":"Review protected manual config behavior"}
+{"file":".trellis/spec/cli/backend/filesystem-safety.md","reason":"External paths and protected mirrors"}
+{"file":".trellis/spec/cli/backend/uninstall-scrubbers.md","reason":"Uninstall ownership retention"}

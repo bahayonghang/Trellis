@@ -1,0 +1,29 @@
+{
+  "id": "hosted-ci-marketplace",
+  "name": "hosted-ci-marketplace",
+  "title": "修复 hosted CI marketplace 子模块不可达",
+  "description": "发布既有 marketplace gitlink 对象并修复 fork 子模块 URL，以 hosted 四矩阵 Checkout 日志验收。",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": "cli",
+  "priority": "P0",
+  "creator": "bahayonghang",
+  "assignee": "bahayonghang",
+  "createdAt": "2026-11-11",
+  "completedAt": "2026-11-11",
+  "branch": "dev",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "c3c08559bcef98f0dfdf84f24a22d7a4de5fec6f",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "Checkout-only acceptance complete: both hosted runs have all four Checkout steps successful; eight full logs confirm the original SHA with no prior not-our-ref error. Downstream Ubuntu Python3.9 and Windows Node26 native assertion failures are recorded separately, not fixed or counted as green. Final independent review passed.",
+  "meta": {
+    "checkout_repair_commit": "c3c08559bcef98f0dfdf84f24a22d7a4de5fec6f",
+    "verified_pr_run": "https://github.com/bahayonghang/Trellis/actions/runs/43139663032"
+  }
+}

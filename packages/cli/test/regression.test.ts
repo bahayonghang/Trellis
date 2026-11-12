@@ -12,7 +12,7 @@
  * 5. Platform Registry (beta.9, beta.13, beta.16)
  */
 
-import { execSync, spawn, spawnSync } from "node:child_process";
+import { execFileSync, execSync, spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -37,6 +37,7 @@ import { getAllHooks as getCodexHooks } from "../src/templates/codex/index.js";
 import { getAllHooks as getCopilotHooks } from "../src/templates/copilot/index.js";
 import {
   getSharedHookScripts,
+  getSharedHookSupportFiles,
   SHARED_HOOKS_BY_PLATFORM,
 } from "../src/templates/shared-hooks/index.js";
 import {
@@ -2799,6 +2800,12 @@ describe("regression: current-task path normalization", () => {
   function writeProjectFile(relativePath: string, content: string): void {
     const absPath = path.join(tmpDir, relativePath);
     fs.mkdirSync(path.dirname(absPath), { recursive: true });
+    // Single-entrypoint fixtures must honor the installed sibling-asset contract.
+    if (relativePath.endsWith(".py") && content.includes("from trellis_hook_input import")) {
+      for (const asset of getSharedHookSupportFiles()) {
+        fs.writeFileSync(path.join(path.dirname(absPath), asset.name), asset.content, "utf-8");
+      }
+    }
     fs.writeFileSync(absPath, content, "utf-8");
   }
 
@@ -2918,7 +2925,7 @@ describe("regression: current-task path normalization", () => {
       pythonCmd,
       [
         "-c",
-        "import runpy, sys; sys.stdout.reconfigure(encoding='utf-8', errors='replace'); runpy.run_path(sys.argv[1], run_name='__main__')",
+        "import runpy, sys, pathlib; sys.path.insert(0, str(pathlib.Path(sys.argv[1]).parent)); sys.stdout.reconfigure(encoding='utf-8', errors='replace'); runpy.run_path(sys.argv[1], run_name='__main__')",
         scriptPath,
       ],
       {
@@ -6760,6 +6767,9 @@ print(json.dumps({
         ),
         hookPath,
       );
+      for (const asset of getSharedHookSupportFiles()) {
+        fs.writeFileSync(path.join(nonTrellisDir, asset.name), asset.content, "utf-8");
+      }
       const result = execSync(`${pythonCmd} ${JSON.stringify(hookPath)}`, {
         cwd: nonTrellisDir,
         input: JSON.stringify({ cwd: nonTrellisDir }),
@@ -6783,7 +6793,7 @@ print(json.dumps({
     );
     const child = spawn(pythonCmd, [hookPath], {
       cwd: tmpDir,
-      env: sessionEnv({ KIRO_PROJECT_DIR: tmpDir }),
+      env: sessionEnv({ KIRO_PROJECT_DIR: tmpDir, TRELLIS_HOOK_STDIN_TIMEOUT_SECONDS: "0.2" }),
       stdio: ["pipe", "pipe", "pipe"],
     });
 
@@ -7047,7 +7057,7 @@ print(json.dumps({
     )?.content;
     expect(hookContent).toBeDefined();
     const hookPath = path.join(tmpDir, "hook.py");
-    fs.writeFileSync(hookPath, hookContent as string, "utf-8");
+    writeProjectFile("hook.py", hookContent as string);
 
     // Minimal fake jsonl with only seed
     const jsonlDir = path.join(tmpDir, "repo");
@@ -7619,7 +7629,8 @@ print(len(entries))
     // Each probe writes a fenced result so newlines in stripped output are
     // preserved; the JS side parses by splitting on the END marker.
     const probe = [
-      "import importlib.util, pathlib, json",
+      "import importlib.util, pathlib, json, sys",
+      "sys.path.insert(0, str(pathlib.Path('.claude/hooks').resolve()))",
       "spec = importlib.util.spec_from_file_location('ss', pathlib.Path('.claude/hooks/session-start.py'))",
       "mod = importlib.util.module_from_spec(spec)",
       "spec.loader.exec_module(mod)",
@@ -7629,7 +7640,10 @@ print(len(entries))
       "result = {'M': mod._strip_breadcrumb_tag_blocks(matched), 'X': mod._strip_breadcrumb_tag_blocks(mismatched), 'N': mod._strip_breadcrumb_tag_blocks(nested_orphan)}",
       "print(json.dumps(result))",
     ].join("; ");
-    const output = execSync(`${pythonCmd} -c ${JSON.stringify(probe)}`, {
+    // argv, not a shell string: quoting with JSON.stringify doubles each
+    // backslash, which sh undoes but cmd.exe does not, so on Windows the
+    // probe's literals would contain a literal backslash-n, not newlines.
+    const output = execFileSync(pythonCmd, ["-c", probe], {
       cwd: tmpDir,
       encoding: "utf-8",
     });
@@ -8169,6 +8183,7 @@ print(len(entries))
         `hook_path = Path(${JSON.stringify(
           path.join(tmpDir, ".trellis", "hooks", "inject-workflow-state.py"),
         )})`,
+        "sys.path.insert(0, str(hook_path.parent))",
         "spec = importlib.util.spec_from_file_location('iws', hook_path)",
         "mod = importlib.util.module_from_spec(spec)",
         "spec.loader.exec_module(mod)",

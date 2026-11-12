@@ -9,6 +9,27 @@
 Applies to: `commands/update.ts`, `commands/uninstall.ts`, `utils/*`,
 `core/channel/**`, and the shipped Python under `templates/trellis/scripts/`.
 
+## Mixed-ownership local hooks ignore rule
+
+`utils/local-hooks-gitignore.ts` plans `.trellis/.gitignore` for init and update.
+Use `lstat` on the workflow directory and ignore leaf before reading: links,
+dangling links and nonregular entries are opaque and only this ignore addition
+is skipped with a warning. Do not disable supported linked-workflow operations.
+
+For a regular existing file, insert only a missing `hooks.local.json` rule after
+the UTF-8 BOM and before user content. Preserve comments, all existing rule
+bytes, CRLF/LF and later negation precedence, including force reinit. Never send
+the user's ignore content through Python-command rewriting or whole-file
+template conflict replacement. Update must apply `update.skip` before the plan
+reads this path, and dry-run must not write. A read-only tracked-file probe may
+advise `git rm --cached`; it must not change index bytes.
+
+Tests: `test/commands/hooks-local-gitignore.integration.test.ts` exercises real
+Git ignore matching, init/update idempotence, BOM/CRLF/custom-rule preservation,
+skip/dry-run and tracked index bytes. `test/utils/local-hooks-gitignore.test.ts`
+covers real directory links/junctions and a controlled file-symlink lstat
+boundary on systems without file-link privileges; no platform test skip is added.
+
 ---
 
 ## 1. Atomic writes — never truncate a state file in place
@@ -27,7 +48,7 @@ from `task.py list`).
 ```ts
 // packages/cli/src/utils/atomic-write.ts
 export function writeFileAtomic(filePath: string, data: string | Uint8Array): void
-// writes `<dir>/.<basename>.<pid>.tmp` then fs.renameSync over filePath;
+// writes `<dir>/.<basename>.<pid>.tmp` then renameSyncWithRetry over filePath;
 // removes the tmp and rethrows on failure. Same-dir tmp keeps rename atomic.
 ```
 
@@ -60,6 +81,66 @@ writeFileAtomic(hashesPath, JSON.stringify(payload, null, 2));
 > **Note**: atomic write fixes the *crash window*. It does **not** fix
 > concurrent last-writer-wins (multiple processes RMW the same file). File
 > locking / seq reconciliation is a separate, still-open concern.
+
+---
+
+### Windows transient rename recovery (R13)
+
+**Scope / trigger:** CLI atomic state writes and ablation staging/file/directory
+publication can encounter short-lived antivirus/indexer handles on Windows.
+
+**Signature:** `renameSyncWithRetry(from: string, to: string): void` in
+`packages/cli/src/utils/rename.ts`. Python keeps the existing
+`write_text_atomic(path: Path, text: str) -> bool` signature.
+
+**Contract:** one initial attempt plus at most 10 retries, waiting 10, 20, …,
+100 ms (550 ms total). The synchronous CLI helper uses `Atomics.wait`; Python
+uses `time.sleep`. Retry only the rename/replace, not the preceding write.
+Neither helper unlinks the destination or changes ownership/conflict checks.
+
+**Validation / error matrix:**
+
+| Condition | Behavior |
+| --- | --- |
+| First attempt succeeds | Return immediately, no wait |
+| Windows `EPERM` / `EACCES` / `EBUSY` | Retry within the budget |
+| Python Windows `PermissionError` | Same retry schedule |
+| Non-Windows or any other error | Fail immediately, no wait |
+| Budget exhausted | CLI rethrows the exact final error; Python returns `False` for `OSError` |
+| Python `BaseException`, including during sleep | Existing temp cleanup runs, then the same exception is re-raised |
+
+**Good / base / bad cases:** a briefly locked target recovers with its old data
+intact until publication; an uncontended rename never sleeps; persistent
+permission denial still fails after 11 attempts. Cleanup remains caller-owned
+and best-effort/existing recovery semantics must not be weakened.
+
+**Tests required:** `test/utils/rename.test.ts` pins controlled first/third/final
+success, all three lock codes, the 11-attempt cap, full 10–100 ms schedule and
+exact final error. Its missing-source canary makes native-success delegation
+fail. Atomic-write tests retain controlled fail-fast/original-error cases plus
+real write-once publication, old-data preservation and temp cleanup. Ablation
+staging/file/directory tests retain real publication and recoverable transactions;
+selected always-failing publication targets still assert their exact cap/error.
+The late directory EIO cleanup control remains native-passthrough and unchanged.
+
+`test/scripts/io.integration.test.ts` executes both Python writers: controlled
+replace outcomes and sleep pin the exact schedule/platform/interrupt contracts,
+with a throwing-native canary and real prepared bytes/arguments. Separate real
+text/JSON publication cases verify exact bytes and no leftover temp files.
+
+**Test boundary:** exact syscall units are a narrow exception to the no-fs-mocks
+rule; never delegate controlled success to native rename/replace under mocked
+zero waits. Native-publication integration must retain production waiting and
+all data/cleanup checks. Count an injected prefix independently of additional
+legitimate native retries; do not assert a global wait count across unrelated
+metadata operations. Exact counts/schedules remain asserted in controlled units,
+not loosened or deleted. See [Mock Strategies](../unit-test/mock-strategies.md#r13-controlled-retry-units-vs-native-publication).
+Do not replace these with Vitest retries or larger timeouts.
+
+**Wrong vs correct:** `fs.renameSync(tmp, target)` at these CLI publication sites
+fails on a transient lock; use `renameSyncWithRetry(tmp, target)` without changing
+the surrounding checks or cleanup. `commands/update.ts` migration rename sites
+remain outside R13; core's asynchronous sidecar helper remains independent.
 
 ---
 
