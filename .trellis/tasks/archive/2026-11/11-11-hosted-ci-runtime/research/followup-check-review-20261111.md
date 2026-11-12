@@ -42,3 +42,21 @@ Reviewer logs are in `C:/Users/lyh/AppData/Local/Temp/trellis-runtime-independen
 ## Remaining gates
 
 Normal complete commit-hook verification and a new actual hosted matrix remain required. Local Windows AST/import controls do not establish Linux full-hook/symlink execution; those existing Linux cases must run remotely. No four-job-green claim is made from this review. The reviewer changed only this receipt and performed no dist write, code/test/settings edit, stage, commit, remote operation, dependency install or fixture cleanup.
+
+## Final acceptance evidence audit — PASS
+
+The remaining gates above are now evidenced for source commit `c85aff5b019ce2ba14e8643924901ca1aef1e1b2`. Inspected the normal-hook log at `C:/Users/lyh/AppData/Local/Temp/trellis-runtime-followup-commit-03cac5f590ab4c0eb45bcf95a66846f9/commit.log`; independently confirmed core403 pass/2 existing skips, CLI2273 pass/35 existing skips in207.56s and the successful commit. No code/settings changes were made for this audit.
+
+Audited all eight entries of `final-hosted-jobs-20261111.json` against their complete local raw logs:
+
+- dev push run https://github.com/bahayonghang/Trellis/actions/runs/43149689290 and PR run https://github.com/bahayonghang/Trellis/actions/runs/43149695069 each contain the full four distinct OS/Node matrix rows. Both runs and all eight jobs record success.
+- All raw-log SHA256 values match. Parsed log text only after handling Windows ANSI/newline representation; hashes were checked against the original unmodified files.
+- Source head is `c85aff5b019ce2ba14e8643924901ca1aef1e1b2` in every entry. Actual `git log -1 --format=%H` output is that SHA for dev and synthetic merge `c05065db730cc1b2285276571ab2a3d62cc865bb` for PR. Source head, event type and actual checkout are correctly distinguished.
+- All eight Checkout, Python setup and smoke step results are success. Each full log positively confirms the original marketplace SHA `1aa9b326baf93257d6142660e49d3120e7f4b4ef` and `CLI smoke passed:`; none contains its prior not-our-ref error or the prior native fs-event assertion.
+- In both Node26 Linux jobs, raw summaries show core404 pass/1 existing skip and CLI2275 pass/no skips. The real six-case `symlinked-workflow-dir.integration.test.ts` suite executed. This supplies the previously pending Linux hook/source-import/containment coverage.
+- In both Node26 Windows jobs, raw summaries show core403 pass/2 existing skips and CLI2273 pass/35 existing skips. Full test steps succeeded without the original worker crash.
+- Node18 jobs correctly skip the four existing conditional typecheck/Python-typecheck/lint/full-test steps, while their built runtime smoke succeeds. Those skips are not counted as passed full suites.
+
+Version qualification: the observed hosted Windows Python installer is3.9.13; Linux installs3.9.25. Both meet the unchanged Python3.9 floor. The local locked Python3.9.25 smoke must not be generalized to every hosted row.
+
+Final evidence review found no acceptance gap or inconsistent count/hash. All four jobs succeeded in each final run for the repaired source. Reviewer performed no new test/build, remote access, index operation or product edit; archive/journal and documentation publication remain main-session bookkeeping.

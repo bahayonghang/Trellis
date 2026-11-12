@@ -25,9 +25,9 @@
 
 - [x] AC1：两条 Linux job 均成功安装 Python3.9并继续运行后续检查。
 - [x] AC2：core/CLI watch 的8.3路径回归 red/green 实际执行；普通路径、事件过滤、UTF8边界和终止/清理相关回归通过。
-- [ ] AC3：修复后的新 hosted run 四个 job 全部成功；Node26 两行执行现有全套检查，Node18 两行完成现有build/runtime smoke。原有条件跳过单独记录。
+- [x] AC3：修复后的新 hosted run 四个 job 全部成功；Node26 两行执行现有全套检查，Node18 两行完成现有build/runtime smoke。原有条件跳过单独记录。
 - [x] AC4：本机源码构建和启动器版本/帮助命令、临时项目生命周期冒烟通过，不发布 npm。
-- [ ] AC5：research 记录根因、影响范围、提交、run/job链接与实际结果，任务正确收尾。
+- [x] AC5：research 记录根因、影响范围、提交、run/job链接与实际结果，任务正确收尾。
 
 ## Out of scope
 

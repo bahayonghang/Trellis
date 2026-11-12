@@ -316,3 +316,40 @@ Published unchanged marketplace SHA to personal fork, changed one URL, verified 
 ### Next Steps
 
 - Separate follow-up: Ubuntu26.04 Python3.9 availability and Windows Node26 fs-event native assertion; no fix in checkout task.
+
+
+## Session 9: Repair hosted runtime CI and validate source use
+<!-- trellis-session: v=2 fp=3f6c0043f177d5ff -->
+
+**Date**: 2026-11-11
+**Task**: Repair hosted runtime CI and validate source use
+**Package**: cli
+**Branch**: `dev`
+
+### Summary
+
+Fixed Python-floor runner and both native watcher targets, then the actual full-suite hook/fixture blockers. Both final hosted matrices passed; existing local source launchers rebuilt and verified.
+
+### Main Changes
+
+- Preserved marketplace SHA, Node18/26 and Python3.9 coverage, exact containment and normal commit hooks; no npm release or global install changes.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c8972b98` | fix(ci): stabilize Python floor and Windows channel watching |
+| `c85aff5b` | fix(hooks): preserve Unicode output and portable CI fixtures |
+
+### Testing
+
+- [OK] Final dev43149689290 and PR43149695069:8/8 success. LinuxNode26 core404/1existing skip +CLI2275; WindowsNode26 core403/2existing skips +CLI2273/35existing skips. Node18 smokes passed.
+- [OK] Actual regression RED/GREEN, lint/type/Python syntax, built Chinese/space/CRLF lifecycle and source launcher checks passed; earlier local timeout and build-race observations retained.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Continue using existing trellis/tl source launchers; npm publication remains out of scope.

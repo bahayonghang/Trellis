@@ -63,3 +63,31 @@ Follow-up implementation receipt now records genuine isolated baseline/current c
 CLI lint and TypeScript noEmit passed; final basedpyright0 errors/68 existing warnings, Python3.9 syntax and tracked Codex mirror UTF8 parity passed. Exact log names, raw RED/GREEN and the AST-probe limitation are in `followup-implementation-20261111.md`. Final independent follow-up review and next normal commit/hosted run remain gates.
 
 Independent R6 review passed without code changes (`followup-check-review-20261111.md`), including raw final doctor34/34 evidence, scoped stdout ownership, exact identity/containment assertions and unchanged protocol serialization. It independently repeated lint/noEmit/Python static checks. Evidence qualification: the ordinary-current-HEAD guard compares UTF8-decoded status/stdout/stderr after CRLF normalization; it is not an original-Buffer byte oracle or a pinned historical baseline after HEAD advances. Unchanged JSON/print code and the meaningful existing comparison support ordinary output compatibility without claiming stronger raw-byte instrumentation.
+
+## Follow-up normal commit and publication — PASS
+
+Staged detect_changes reported20 files/7 overlapping symbols, low diff risk. The hunks include the two unchanged adjacent `_has_curated_jsonl_entry` declaration headers; the actual Python body changes are confined to the reviewed encoding helpers. Exact fixture helpers and static Codex mirror were separately inspected. No unrelated product flow was changed.
+
+Normal commit hook passed with fresh process-local TEMP/TMP/TMPDIR `C:/Users/lyh/AppData/Local/Temp/trellis-runtime-followup-commit-03cac5f590ab4c0eb45bcf95a66846f9`; raw `commit.log` records core403 pass/2 existing skips and CLI2273 pass/35 existing skips (98 files passed/1 skipped,207.56s). No failed attempt was hidden or test setting changed.
+
+Follow-up source commit `c85aff5b019ce2ba14e8643924901ca1aef1e1b2` was normally pushed to dev after fetch confirmed1 ahead/0 behind origin/dev atc8972b98. No force, tags, upstream or npm writes. Actual next-head hosted acceptance is still pending.
+
+## Final actual hosted acceptance — PASS
+
+- dev push: https://github.com/bahayonghang/Trellis/actions/runs/43149689290 — completed/success.
+- PR #1: https://github.com/bahayonghang/Trellis/actions/runs/43149695069 — completed/success.
+- Both source heads: `c85aff5b019ce2ba14e8643924901ca1aef1e1b2`.
+- Actual PR synthetic merge: `c05065db730cc1b2285276571ab2a3d62cc865bb`, parsed from each job's git-log checkout output; push jobs checked out the source head itself.
+
+| Matrix row | dev job | PR job | Actual outcome in both |
+| --- | --- | --- | --- |
+| Ubuntu24.04 / Node18.17.0 | 130955678826 | 130955698109 | success, built CLI runtime smoke |
+| Ubuntu24.04 / Node26.7.0 | 130955678776 | 130955697962 | success, core404 pass/1 existing skip; CLI2275 pass/0 skips; smoke |
+| Windows / Node18.17.0 | 130955678506 | 130955697716 | success, built CLI runtime smoke |
+| Windows / Node26.7.0 | 130955678729 | 130955698010 | success, core403 pass/2 existing skips; CLI2273 pass/35 existing skips; smoke |
+
+Node18 rows build under26.7 then switch to18.17 for the actual standalone smoke. Their existing conditional typecheck/lint/full-suite skips remain skips, not passing full tests. Node26 rows executed the complete configured checks. Linux logs explicitly show all6 symlink cases executed; Windows retains their existing eligibility skips. Both Node26 platforms passed doctor34, hook-root34 and OMP25. Hosted Linux used Python3.9.25 and Windows used3.9.13; both satisfy the configured3.9 floor, and setup/syntax plus every Checkout succeeded. Local locked self-use checks used3.9.25.
+
+Downloaded all8 full job logs. `final-hosted-jobs-20261111.json` preserves run/job URLs, event/source/actual checkout SHA, test summaries, conditional skipped steps, checkout/Python/smoke conclusions, log paths and captured-file SHA256 hashes. Every log confirms the unchanged marketplace SHA1aa9b326baf93257d6142660e49d3120e7f4b4ef; none contains its old not-our-ref error or the prior native `_wcsnicmp` assertion. Source/task worktree inspection after acceptance found no later product changes.
+
+The first failed local full gate, its unchanged control/retry and the acknowledged build/test race remain recorded above; the final green runs do not rewrite those observations or claim the unexplained initial platform timeout was fixed. No Linux/Windows hosted result was inferred solely from local tests. Self-use acceptance remains the actual source-launcher checks and disposable built CLI lifecycle smoke, not an npm release or native AI-host UI acceptance.
