@@ -94,7 +94,7 @@ def should_skip_injection() -> bool:
 
 
 def configure_project_encoding(project_dir: Path) -> None:
-    """Reuse Trellis' shared Windows stdio encoding helper before JSON output."""
+    """Prepare owned-workspace JSON stdout and shared platform stdio support."""
     scripts_dir = project_dir / ".trellis" / "scripts"
     if str(scripts_dir) not in sys.path:
         sys.path.insert(0, str(scripts_dir))
@@ -104,7 +104,11 @@ def configure_project_encoding(project_dir: Path) -> None:
 
         configure_encoding()
     except Exception:
-        pass  # Optional encoding helper; host defaults are still usable.
+        pass  # Optional platform helper; configure JSON stdout below.
+
+    reconfigure_stdout = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure_stdout):
+        reconfigure_stdout(encoding="utf-8", errors="replace")
 
 
 def _has_curated_jsonl_entry(jsonl_path: Path) -> bool:

@@ -171,11 +171,11 @@ function assertSelected(
           cwd: string;
         },
     );
-    expect(tickets.map((ticket) => fs.realpathSync(ticket.cwd))).toContain(
-      fs.realpathSync(label === "child" ? cwd : project),
+    expect(tickets.map((ticket) => fs.realpathSync.native(ticket.cwd))).toContain(
+      fs.realpathSync.native(label === "child" ? cwd : project),
     );
   } else if (hook.includes("write-trellis")) {
-    const expectedRoot = label === "child" ? cwd : project;
+    const expectedRoot = fs.realpathSync.native(label === "child" ? cwd : project);
     const payload = JSON.parse(result.stdout) as { additionalContext: string };
     expect(payload.additionalContext).toContain(`Repo: ${expectedRoot}`);
     expect(

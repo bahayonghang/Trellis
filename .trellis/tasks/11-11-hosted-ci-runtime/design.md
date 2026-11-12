@@ -42,3 +42,14 @@ Wrong: move CI Temp to a long path and declare the native crash fixed. Correct: 
 ## Risks and rollback
 
 Core impact HIGH; CLI impact CRITICAL. These are preliminary exact-file impact results over an index two documentation/config-only commits behind HEAD; refresh/re-run before editing. Public API consumers and CLI wait/messages/supervisor/inbox need focused regression coverage. Rollback via ordinary revert, never force push. No task success until hosted four-job results and source-launcher checks actually exist; new independent failures require evidence and a scope decision rather than ad hoc patches.
+
+## Classified hosted blockers after the first repair
+
+Run43146333078 confirms Linux Python3.9 setup and Windows native watcher repair, but exposes previously unreachable CLI failures. These are direct blockers to the already-approved four-job acceptance, with no new product goal or API/permission decision:
+
+- Codex/Copilot `configure_project_encoding` imports a helper that only configures Windows streams. An explicitly cp1252 Linux stdout still fails when emitting Unicode JSON. Fix stdout encoding only after owned-workspace selection, preserving ordinary UTF8 output byte-for-byte and existing structured payloads. Do not change global `common.configure_encoding` semantics or use ensure_ascii to bypass the ordinary-byte compatibility test. Sync the tracked Codex dogfood mirror only where necessary; leave settings/template hashes alone.
+- The symlink fixture imports a source hook through importlib but omits adjacent support modules from sys.path. Repair the probe's import environment; preserve all containment assertions and existing platform eligibility.
+- Node's legacy fs.realpathSync preserves Windows8.3 components while Python/native canonicalization expands them. Canonicalize physical-path assertions with native realpath in the existing doctor/hook-root fixtures. Keep exact identity assertions; do not weaken them to substrings or case-insensitive guesses.
+- OMP `makeOmpProject` uses TMPDIR-or-/tmp instead of the already-imported os.tmpdir(). Use the OS temp API and prove operation with TMPDIR absent. No CI environment workaround.
+
+Preliminary source-qualified impact of each template configure_project_encoding is LOW:1 direct main caller,2 upstream symbols,1 process. Refresh/recheck before edits. Detailed log evidence and test counts are retained in verification. Root/source ownership must be explicit in the implement follow-up; no changes to unrelated platform runtime or test deadlines.

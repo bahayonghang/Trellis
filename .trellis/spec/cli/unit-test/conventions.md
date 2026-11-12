@@ -24,6 +24,20 @@
 
 ## Test Isolation
 
+### Native filesystem and source-hook fixtures
+
+- Use `os.tmpdir()` for temporary fixture roots. `TMPDIR ?? "/tmp"` is not a
+  Windows fallback; test the missing-variable case without creating a fake
+  system directory or forcing a CI-only Temp override.
+- Compare physical path identities through `fs.realpathSync.native` when
+  fixtures can contain Windows 8.3 aliases. Legacy `fs.realpathSync` may retain
+  a short component while Python's canonical path expands it. Keep exact
+  identity and containment assertions, rather than accepting substrings.
+- A Python hook imported directly with `importlib` still needs its source
+  companion modules on the probe's import path. Model that environment in the
+  fixture; do not relax production hook imports or containment to repair a
+  source-only probe.
+
 ### Strip host-shell env vars at process start
 
 `test/setup.ts` is registered via `setupFiles` in `vitest.config.ts` and

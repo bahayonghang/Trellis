@@ -3,3 +3,4 @@
 {"file":".trellis/spec/cli/backend/commands-channel.md","reason":"Both watcher owners and channel lifecycle contracts"}
 {"file":".trellis/spec/cli/unit-test/conventions.md","reason":"Persistent isolated red/green regression conventions"}
 {"file":".trellis/tasks/11-11-hosted-ci-runtime/research/root-cause-20261111.md","reason":"Latest GitHub evidence and short-path native reproduction"}
+{"file": ".trellis/spec/cli/backend/script-conventions.md", "reason": "Python3.9 hook follow-up and mirrored script boundaries"}

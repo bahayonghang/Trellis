@@ -15,7 +15,7 @@
   "branch": "dev",
   "base_branch": "main",
   "worktree_path": null,
-  "commit": null,
+  "commit": "c8972b98a0ca686581587a515f4af7713d6c58e8",
   "pr_url": "https://github.com/bahayonghang/Trellis/pull/1",
   "subtasks": [],
   "children": [],

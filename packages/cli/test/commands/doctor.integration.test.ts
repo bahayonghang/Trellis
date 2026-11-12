@@ -206,7 +206,7 @@ describe("read-only trellis doctor", () => {
     workspace();
     const { report, status } = run({ TRELLIS_CONTEXT_ID: "codex_doctor" });
     expect(status).toBe(0);
-    expect(report.root).toBe(fs.realpathSync(root));
+    expect(report.root).toBe(fs.realpathSync.native(root));
     expect(report.checks.filter((check) => check.status === "error")).toEqual(
       [],
     );
@@ -318,7 +318,7 @@ describe("read-only trellis doctor", () => {
     workspace();
     fs.unlinkSync(path.join(root, ".trellis/workflow.md"));
     const { report, status } = run();
-    expect(report.root).toBe(fs.realpathSync(root));
+    expect(report.root).toBe(fs.realpathSync.native(root));
     expect(status).toBe(1);
     expect(report.checks).toContainEqual(
       expect.objectContaining({
@@ -604,7 +604,7 @@ describe("read-only trellis doctor", () => {
     );
     const { report, status } = run({ TRELLIS_CONTEXT_ID: "codex_doctor" });
     expect(status).toBe(0);
-    expect(report.root).toBe(fs.realpathSync(root));
+    expect(report.root).toBe(fs.realpathSync.native(root));
     expect(report.checks).toContainEqual(
       expect.objectContaining({ id: "task.current", status: "ok" }),
     );
@@ -757,7 +757,7 @@ describe("read-only trellis doctor", () => {
       env: fixtureEnv(),
     });
     expect(initialized.status).toBe(0);
-    expect(run({}, cwd).report.root).toBe(fs.realpathSync(root));
+    expect(run({}, cwd).report.root).toBe(fs.realpathSync.native(root));
   });
 
   it("keeps version-mismatch JSON as exactly one schema-valid object", () => {

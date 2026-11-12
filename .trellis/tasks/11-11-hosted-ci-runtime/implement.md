@@ -17,6 +17,10 @@ User approved the final plan on 2026-11-11, including the reported HIGH/CRITICAL
 9. [ ] If additional failures appear, diagnose their owning path and relation to this repair before editing; scope or public behavior changes return to plan review. Do not rerun unchanged failures until green.
 10. [ ] All AC satisfied: record evidence, archive and journal, normal commit/push final records. No npm release/tag/PR merge.
 
+## Direct-blocker follow-up under step9 / R6
+
+First actual run43146333078 completed/failure after reaching the full suites: both Node18 jobs passed, Windows core403/2existing skips passed, Linux CLI4failed/2270passed and Windows CLI22failed/2250passed. Follow-up is bounded to the R6 files/contracts in design, and does not change the four-job goal or approval constraints. Use existing failing tests as RED evidence and isolated reproduction where practical, add only missing durable guards, preserve ordinary hook stdout bytes and containment checks. Rebuild and review before the next normal commit/push; no rerun of the unchanged failed hosted head.
+
 ## Validation commands
 
 ```text

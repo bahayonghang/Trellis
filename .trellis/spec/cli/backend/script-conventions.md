@@ -25,6 +25,55 @@ not match the pin. Check with `uv run python --version`; actual Python 3.9
 This setup applies only to developing this checkout; generated user projects
 still require Python 3.9+ and do not require uv.
 
+## SessionStart JSON stdout after workspace selection
+
+### 1. Scope / Trigger
+
+Codex/Copilot SessionStart hooks emit Unicode context as JSON. A non-Windows
+host may explicitly set `PYTHONIOENCODING=cp1252`; the common Windows encoding
+helper alone does not protect that output.
+
+### 2. Signatures
+
+`configure_project_encoding(project_dir: Path) -> None` is an internal hook
+helper called only after an owned Trellis workspace has been selected.
+
+### 3. Contracts
+
+The owned hook stdout must support UTF-8 JSON regardless of the initial locale.
+Keep ordinary UTF-8 output bytes, JSON schema and decoded Unicode context stable.
+Do not globally broaden `common.configure_encoding` or change unrelated stdin
+and stderr behavior on Unix as part of this hook-output repair. Outside a valid
+workspace, hooks remain silent without this output configuration side effect.
+
+### 4. Validation & Error Matrix
+
+| Condition | Expected |
+| --- | --- |
+| Owned workspace, cp1252 stdout | Valid UTF-8 SessionStart JSON with Unicode context |
+| Owned workspace, normal UTF-8 stdout | Existing byte-compatible output |
+| No owned workspace | Existing silent/no-context behavior |
+| Optional common helper unavailable | Existing fail-open behavior; no invented context |
+
+### 5. Good/Base/Bad Cases
+
+Good: parsed context retains `子任务🚀` under cp1252. Base: ordinary-root output
+matches the current HEAD protocol bytes. Bad: special-case the test away on
+Linux, rely on CI forcing UTF-8 globally, or use ASCII escaping merely to avoid
+the existing stdout compatibility requirement.
+
+### 6. Tests Required
+
+Keep generated Codex/Copilot non-UTF-8 subprocess tests and ordinary-root byte
+compatibility controls. Verify no-project silence and root-selection isolation;
+use actual Python 3.9 runtime evidence as well as syntax/type checks.
+
+### 7. Wrong vs Correct
+
+Wrong: assume the Windows-only common helper configured Linux stdout.
+Correct: configure the selected hook's JSON output stream at its ownership
+boundary, preserving common's existing platform contract and other protocols.
+
 ## Directory Structure
 
 ```

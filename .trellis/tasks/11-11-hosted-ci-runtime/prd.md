@@ -19,10 +19,11 @@
 - R3：加入真实回归保护，未修复版本必须失败，修复后通过；不靠禁用 watch、换掉Node26、跳过测试、放宽断言或增大超时转绿。
 - R4：构建最新 core/CLI 并验证现有 trellis/tl 启动链路，在临时项目验证核心生命周期；不覆盖真实用户项目配置或重写已有全局启动器。
 - R5：正常提交、推送 dev，并获取修复后真实 hosted 矩阵结果；出现新失败先分类诊断，明确范围，禁止无限扩展修复或重复 rerun 冒充修复。
+- R6：首次修复后 run43146333078 已越过 Python setup/native watcher 阻塞，后续失败被分类为本任务全矩阵验收的直接阻塞：仅修复 Codex/Copilot 已选中工作区的 UTF8 JSON stdout（保留普通 UTF8原始输出字节和协议）、symlink 源码导入探针的支持模块路径、Windows物理路径等价断言和 OMP夹具临时目录选择。不修改通用脚本的全局编码策略、不扩大 hook 权限或 containment边界。
 
 ## Acceptance
 
-- [ ] AC1：两条 Linux job 均成功安装 Python3.9并继续运行后续检查。
+- [x] AC1：两条 Linux job 均成功安装 Python3.9并继续运行后续检查。
 - [x] AC2：core/CLI watch 的8.3路径回归 red/green 实际执行；普通路径、事件过滤、UTF8边界和终止/清理相关回归通过。
 - [ ] AC3：修复后的新 hosted run 四个 job 全部成功；Node26 两行执行现有全套检查，Node18 两行完成现有build/runtime smoke。原有条件跳过单独记录。
 - [x] AC4：本机源码构建和启动器版本/帮助命令、临时项目生命周期冒烟通过，不发布 npm。
@@ -30,4 +31,4 @@
 
 ## Out of scope
 
-不发布 npm，不改个人/上游 marketplace 内容或 gitlink，不改 CLI 默认 marketplace 源，不动全局 Node/用户配置，不删已有 Temp 夹具，不改 channel 公共 API，不做 supervisor 重构。新独立缺陷须先举证并说明是否属于本任务直接阻塞项。
+不发布 npm，不改个人/上游 marketplace 内容或 gitlink，不改 CLI 默认 marketplace 源，不动全局 Node/用户配置，不删已有 Temp 夹具，不改 channel 公共 API，不做 supervisor 重构。新独立缺陷须先举证并说明是否属于本任务直接阻塞项；R6 已根据实际 hosted 日志完成分类，目标和验收约束不变。
