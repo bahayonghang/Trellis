@@ -434,6 +434,62 @@ type ChannelEventKind = "create" | "join" | "leave" | "message" | "thread" | "co
   queueing, interrupt compatibility, and `<worker>.inbox-cursor` remain
   CLI-local concerns.
 
+### Windows watcher directory canonicalization
+
+#### 1. Scope / Trigger
+
+Both core `channel/internal/store/watch.ts` and the active CLI
+`commands/channel/store/watch.ts` call native `fs.watch`. On Node 26.7.0,
+passing a Windows 8.3 directory alias can abort the process inside libuv's
+`uv__relative_path` assertion. A JavaScript catch/error listener cannot recover
+from this native abort; changing only CI's Temp location hides the defect.
+
+#### 2. Signatures
+
+Keep `watchEvents(name, filter, opts): AsyncGenerator<ChannelEvent>` unchanged.
+Normalize the existing directory with `fs.realpathSync.native(directory)` before
+passing it to `fs.watch` on Windows, inside the existing watcher setup try/catch.
+
+#### 3. Contracts
+
+- Only the native watch target changes. Original event-file paths, filters,
+  sequence modes and incremental UTF-8 decoding retain their behavior.
+- Non-Windows watch targets are unchanged.
+- The 200ms poll and abort/iterator-return cleanup remain enabled.
+- Apply this at both current watcher owners; do not migrate CLI supervision or
+  introduce a new public API as part of a path fix.
+
+#### 4. Validation & Error Matrix
+
+| Condition | Result |
+| --- | --- |
+| Windows short directory alias | Watch canonical physical directory without native abort |
+| Normal directory | Existing event delivery and filtering |
+| Native realpath or watch setup throws | Existing polling fallback remains live |
+| Abort or iterator return | Close watcher, remove listener and clear interval |
+
+#### 5. Good/Base/Bad Cases
+
+Good: aliases of the same Windows directory yield the same event stream.
+Base: a UTF-8 character split across reads is decoded once and correctly.
+Bad: disable watch, skip the failing case, or change the CI path without
+protecting the application boundary.
+
+#### 6. Tests Required
+
+Guard canonical watcher input in both owners, including on machines without
+short-name support. Exercise real short-path notification in a subprocess when
+Windows aliases are available, so an unfixed implementation cannot kill the
+whole test runner. Preserve ordinary-path, fallback and cleanup coverage. Run
+the regression against unfixed and fixed application code; a passing standalone
+Node mitigation probe alone does not establish application correctness.
+
+#### 7. Wrong vs Correct
+
+Wrong: `fs.watch(shortDirectory, wake)` and assume catch handles every failure.
+Correct: Windows `fs.watch(fs.realpathSync.native(directory), wake)` inside the
+existing setup guard, while retaining polling and cleanup.
+
 ### Core channel durable idempotency
 
 #### 1. Scope / Trigger

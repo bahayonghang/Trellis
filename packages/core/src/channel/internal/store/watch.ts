@@ -102,7 +102,11 @@ export async function* watchEvents(
 
   let watcher: fs.FSWatcher | null = null;
   try {
-    watcher = fs.watch(channelDir(channelName, opts.project), () => wake());
+    const directory = channelDir(channelName, opts.project);
+    // libuv can abort when Windows 8.3 paths meet long-path notifications.
+    const watchDirectory =
+      process.platform === "win32" ? fs.realpathSync.native(directory) : directory;
+    watcher = fs.watch(watchDirectory, () => wake());
     watcher.on("error", () => {
       try {
         watcher?.close();
