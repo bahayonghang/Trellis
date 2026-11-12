@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 7
+- **Total Sessions**: 8
 - **Last Active**: 2026-11-11
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~283 | Active |
+| `journal-1.md` | ~318 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 8 | 2026-11-11 | Repair hosted marketplace checkout | `c3c08559` | `dev` |
 | 7 | 2026-11-11 | Verification receipts local V1 completion | `4963f82cff2618fe46f3deffacd15275f331caab` | `dev` |
 | 6 | 2026-11-11 | Local reliability v1 closeout | - | `dev` |
 | 5 | 2026-11-11 | Hosted reliability CI checkout diagnosis | - | `dev` |

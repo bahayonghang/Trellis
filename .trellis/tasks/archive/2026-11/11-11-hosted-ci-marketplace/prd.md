@@ -21,9 +21,9 @@
 ## Acceptance Criteria
 
 - [x] AC1：`gh api repos/bahayonghang/marketplace/commits/1aa9b326baf93257d6142660e49d3120e7f4b4ef` 成功并返回准确 SHA；全新对象库可从该 fork 获取准确 commit。
-- [ ] AC2：提交中的 marketplace gitlink 仍是原 SHA；产品配置 diff 仅一行 URL，marketplace 工作树未修改。
-- [ ] AC3：最新 PR #1 或 dev 的 CI run 四个矩阵 job 均完成 Checkout 且该步骤为 success；各 job 日志不再包含上述 not-our-ref 错误，并有成功检出原 SHA 的正面证据。
-- [ ] AC4：新任务 research 保存完整验收记录，并向旧 windows-ci research 添加承接记录；若出现后续失败，向已归档 fork-reliability-v1 的 research 追加事实记录，不混入本次产品修复。
+- [x] AC2：提交中的 marketplace gitlink 仍是原 SHA；产品配置 diff 仅一行 URL，marketplace 工作树未修改。
+- [x] AC3：最新 PR #1 或 dev 的 CI run 四个矩阵 job 均完成 Checkout 且该步骤为 success；各 job 日志不再包含上述 not-our-ref 错误，并有成功检出原 SHA 的正面证据。
+- [x] AC4：新任务 research 保存完整验收记录，并向旧 windows-ci research 添加承接记录；若出现后续失败，向已归档 fork-reliability-v1 的 research 追加事实记录，不混入本次产品修复。
 
 ## Out of Scope
 

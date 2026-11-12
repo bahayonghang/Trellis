@@ -281,3 +281,38 @@ Implemented opt-in task verification receipts and completed its real strict loca
 ### Next Steps
 
 - Requested local task cohort is complete. Keep delivery local; no push or package publication.
+
+
+## Session 8: Repair hosted marketplace checkout
+<!-- trellis-session: v=2 fp=653ab339b0b165ea -->
+
+**Date**: 2026-11-11
+**Task**: Repair hosted marketplace checkout
+**Package**: cli
+**Branch**: `dev`
+
+### Summary
+
+Published unchanged marketplace SHA to personal fork, changed one URL, verified all four Checkout steps in both dev and PR runs, and retained downstream failures separately.
+
+### Main Changes
+
+- Normal dev push included the explicitly approved eight existing commits and checkout fix.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c3c08559` | fix(ci): use reachable marketplace fork for checkout |
+
+### Testing
+
+- [OK] Remote API and independent fresh fetch passed; hosted checkout 8/8; local lint/typecheck and normal hook passed (core401/2 existing skips, CLI2270/35 existing skips).
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Separate follow-up: Ubuntu26.04 Python3.9 availability and Windows Node26 fs-event native assertion; no fix in checkout task.
